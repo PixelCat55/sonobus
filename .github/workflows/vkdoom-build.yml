@@ -1,0 +1,51 @@
+name: VkDoom Windows Build
+
+on:
+  push:
+    branches:
+      - vkdoom-build-09634479
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout VkDoom source
+        uses: actions/checkout@v4
+        with:
+          repository: nashmuhandes/VkDoom
+          ref: 09634479ab5bf9adf691074fffe85a006a398cd0
+          path: VkDoom
+
+      - name: Configure Release x64
+        shell: pwsh
+        run: |
+          cmake -S VkDoom -B VkDoom/build -A x64 -DCMAKE_BUILD_TYPE=Release -DPK3_QUIET_ZIPDIR=ON
+
+      - name: Build Release
+        shell: pwsh
+        run: |
+          cmake --build VkDoom/build --config Release --parallel 3
+
+      - name: Package portable build
+        shell: pwsh
+        run: |
+          $src = "VkDoom/build/Release"
+          $pkg = "VkDoom-Windows-x64-09634479"
+          New-Item -ItemType Directory -Force -Path $pkg | Out-Null
+          Copy-Item "$src/vkdoom.exe" $pkg
+          if (Test-Path "$src/vktool.exe") { Copy-Item "$src/vktool.exe" $pkg }
+          Copy-Item "$src/*.pk3" $pkg -ErrorAction SilentlyContinue
+          if (Test-Path "$src/fm_banks") { Copy-Item "$src/fm_banks" $pkg -Recurse }
+          if (Test-Path "$src/soundfonts") { Copy-Item "$src/soundfonts" $pkg -Recurse }
+          if (Test-Path "VkDoom/bin/licenses.zip") { Copy-Item "VkDoom/bin/licenses.zip" $pkg }
+          if (Test-Path "VkDoom/bin/windows/libsndfile/64bit/libsndfile-1.dll") { Copy-Item "VkDoom/bin/windows/libsndfile/64bit/libsndfile-1.dll" $pkg }
+          if (Test-Path "VkDoom/bin/windows/openal/64bit/openal32.dll") { Copy-Item "VkDoom/bin/windows/openal/64bit/openal32.dll" $pkg }
+          if (Test-Path "VkDoom/bin/windows/zmusic/64bit/zmusic.dll") { Copy-Item "VkDoom/bin/windows/zmusic/64bit/zmusic.dll" $pkg }
+          Compress-Archive -Path "$pkg/*" -DestinationPath "$pkg.zip" -Force
+
+      - name: Upload portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: VkDoom-Windows-x64-09634479
+          path: VkDoom-Windows-x64-09634479.zip
+          if-no-files-found: error

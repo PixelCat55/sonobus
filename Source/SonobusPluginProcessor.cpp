@@ -4180,7 +4180,7 @@ int32_t SonobusAudioProcessor::handleClientEvents(const aoo_event ** events, int
 
             if (mPendingReconnect) {
                 
-                if (mIsConnectedToServer && mPendingReconnectInfo.groupName.isNotEmpty()) {
+                if (mIsConnectedToServer.get() && mPendingReconnectInfo.groupName.isNotEmpty()) {
                     mPendingReconnectInfo.timestamp = Time::getCurrentTime().toMilliseconds();
                     addRecentServerConnectionInfo(mPendingReconnectInfo);
                     setWatchPublicGroups(false);
@@ -4191,7 +4191,7 @@ int32_t SonobusAudioProcessor::handleClientEvents(const aoo_event ** events, int
                 mPendingReconnect = false;
             }
 
-            if (mIsConnectedToServer && mReconnectTimer.isTimerRunning()) {
+            if (mIsConnectedToServer.get() && mReconnectTimer.isTimerRunning()) {
                 DBG("Stopping reconnect timer");
                 mReconnectTimer.stopTimer();
                 mRecoveringFromServerLoss = false;

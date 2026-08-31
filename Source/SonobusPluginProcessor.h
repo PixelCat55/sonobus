@@ -1087,7 +1087,7 @@ private:
     std::unique_ptr<EndpointState> mServerEndpoint;
     
     bool mAutoconnectGroupPeers = true;
-    bool mIsConnectedToServer = false;
+    Atomic<bool> mIsConnectedToServer { false };
     String mCurrentJoinedGroup;
     double mSessionConnectionStamp = 0.0;
     bool mWatchPublicGroups = false;

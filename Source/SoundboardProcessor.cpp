@@ -74,10 +74,18 @@ void SoundboardProcessor::deleteSoundboard(int index)
 #endif
 
     
-    // If the last soundboard was selected
-    if (selectedSoundboardIndex == soundboards.size()) {
+    if (selectedSoundboardIndex.has_value()) {
         auto selected = *selectedSoundboardIndex;
-        selectedSoundboardIndex = selected > 0 ? std::optional<int>(selected - 1) : std::nullopt;
+
+        if (soundboards.empty()) {
+            selectedSoundboardIndex = std::nullopt;
+        }
+        else if (selected == index) {
+            selectedSoundboardIndex = jmin(index, static_cast<int>(soundboards.size()) - 1);
+        }
+        else if (selected > index) {
+            selectedSoundboardIndex = selected - 1;
+        }
     }
 
     reorderSoundboards();
@@ -98,6 +106,11 @@ void SoundboardProcessor::selectSoundboard(int index)
 
 void SoundboardProcessor::reorderSoundboards()
 {
+    if (soundboards.empty()) {
+        selectedSoundboardIndex = std::nullopt;
+        return;
+    }
+
     // Figure out what the new (sorted) indices will be.
     auto originalSelectedIndex = selectedSoundboardIndex.value_or(-1);
     auto originalIndices = sortIndexPreview(soundboards);

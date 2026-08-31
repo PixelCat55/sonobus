@@ -1862,7 +1862,12 @@ void SonobusAudioProcessorEditor::updateTransportState()
 void SonobusAudioProcessorEditor::timerCallback(int timerid)
 {
     if (timerid == PeriodicUpdateTimerId) {
-        
+        // When the standalone window is hidden in the system tray there is no
+        // visible UI to update. Keep audio/network processing untouched and
+        // avoid the comparatively expensive peer/layout polling until shown.
+        if (! isShowing())
+            return;
+
         bool stateUpdated = updatePeerState();
         
         updateChannelState();
@@ -4035,10 +4040,14 @@ void SonobusAudioProcessorEditor::handleAsyncUpdate()
                 mChatView->addNewChatMessage(SBChatEvent(SBChatEvent::SystemType, ev.group, ev.user, "", "", mesg));
             }
 
-            // delay update
-            Timer::callAfterDelay(200, [this] {
-                updatePeerState(true);
-                updateState(false);
+            // Delay the UI refresh without leaving a raw editor pointer queued.
+            Component::SafePointer<SonobusAudioProcessorEditor> safeThis (this);
+            Timer::callAfterDelay (200, [safeThis]() mutable {
+                if (safeThis == nullptr)
+                    return;
+
+                safeThis->updatePeerState (true);
+                safeThis->updateState (false);
             });
         }
         else if (ev.type == ClientEvent::PeerLeaveEvent) {

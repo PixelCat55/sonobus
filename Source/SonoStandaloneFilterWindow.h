@@ -1078,7 +1078,10 @@ public:
             safeThis->hideToTrayPending = false;
 
             if (safeThis->isMinimised())
+            {
                 safeThis->setVisible (false);
+                Desktop::getInstance().setScreenSaverEnabled (true);
+            }
         });
     }
 
@@ -1092,6 +1095,7 @@ public:
             setMinimised (false);
 
         setVisible (true);
+        Desktop::getInstance().setScreenSaverEnabled (false);
         toFront (true);
     }
 #endif

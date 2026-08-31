@@ -199,6 +199,32 @@ Soundboard::Soundboard(String newName)
         : name(std::move(newName)), samples()
 {}
 
+Soundboard::Soundboard(const Soundboard& other)
+        : name(other.name)
+{
+    samples.reserve(other.samples.size());
+
+    for (const auto& sample : other.samples)
+        samples.push_back(sample != nullptr ? std::make_unique<SoundSample>(*sample) : nullptr);
+}
+
+Soundboard& Soundboard::operator=(const Soundboard& other)
+{
+    if (this == &other)
+        return *this;
+
+    name = other.name;
+
+    std::vector<std::unique_ptr<SoundSample>> copiedSamples;
+    copiedSamples.reserve(other.samples.size());
+
+    for (const auto& sample : other.samples)
+        copiedSamples.push_back(sample != nullptr ? std::make_unique<SoundSample>(*sample) : nullptr);
+
+    samples = std::move(copiedSamples);
+    return *this;
+}
+
 String Soundboard::getName() const
 {
     return this->name;

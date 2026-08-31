@@ -1409,7 +1409,7 @@ void SonobusAudioProcessor::setRemotePeerAudioCodecFormat(int index, int formatI
     
     const AudioCodecFormatInfo & info = mAudioFormats.getReference(formatIndex);
 
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
  
     auto remote = mRemotePeers.getUnchecked(index);
     remote->formatIndex = formatIndex;
@@ -1452,7 +1452,7 @@ bool SonobusAudioProcessor::setRequestRemotePeerSendAudioCodecFormat(int index, 
     if (formatIndex >= mAudioFormats.size() || index < 0 || index >= mRemotePeers.size()) return false;
     
 
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     auto remote = mRemotePeers.getUnchecked(index);
 
     aoo_format_storage fmt;
@@ -1498,7 +1498,7 @@ void SonobusAudioProcessor::setRemotePeerOrderPriority(int index, int priority)
 {
     if (index < 0 || index >= mRemotePeers.size()) return;
 
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
 
     auto remote = mRemotePeers.getUnchecked(index);
     remote->orderPriority = priority;
@@ -1517,7 +1517,7 @@ void SonobusAudioProcessor::setRemotePeerSendPacketsize(int index, int psize)
 {
     if (index < 0 || index >= mRemotePeers.size()) return;
     
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
 
     DBG("Setting packet size to " << psize);
     
@@ -1538,7 +1538,7 @@ void SonobusAudioProcessor::setRemotePeerCompressorParams(int index, int changro
 {
     if (index < 0 || index >= mRemotePeers.size()) return;
     
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
 
     auto remote = mRemotePeers.getUnchecked(index);
 
@@ -1572,7 +1572,7 @@ void SonobusAudioProcessor::setRemotePeerExpanderParams(int index, int changroup
 {
     if (index < 0 || index >= mRemotePeers.size()) return;
 
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
 
     auto remote = mRemotePeers.getUnchecked(index);
 
@@ -1601,7 +1601,7 @@ void SonobusAudioProcessor::setRemotePeerEqParams(int index, int changroup, Sono
 {
     if (index < 0 || index >= mRemotePeers.size()) return;
 
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
 
     auto remote = mRemotePeers.getUnchecked(index);
 
@@ -4699,7 +4699,7 @@ int SonobusAudioProcessor::getNumberRemotePeers() const
 
 void SonobusAudioProcessor::setRemotePeerLevelGain(int index, float levelgain)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->gain = levelgain;
@@ -4721,7 +4721,7 @@ float SonobusAudioProcessor::getRemotePeerLevelGain(int index) const
 
 void SonobusAudioProcessor::setRemotePeerChannelGain(int index, int changroup, float levelgain)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size() && changroup >= 0 && changroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->chanGroups[changroup].params.gain = levelgain;
@@ -4742,7 +4742,7 @@ float SonobusAudioProcessor::getRemotePeerChannelGain(int index, int changroup) 
 
 void SonobusAudioProcessor::setRemotePeerChannelReverbSend(int index, int changroup, float rgain)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size() && changroup >= 0 && changroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->chanGroups[changroup].params.monReverbSend = rgain;
@@ -4763,7 +4763,7 @@ float SonobusAudioProcessor::getRemotePeerChannelReverbSend(int index, int chang
 
 void SonobusAudioProcessor::setRemotePeerPolarityInvert(int index, int changroup, bool invert)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size() && changroup >= 0 && changroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->chanGroups[changroup].params.invertPolarity = invert;
@@ -4782,7 +4782,7 @@ bool SonobusAudioProcessor::getRemotePeerPolarityInvert(int index, int changroup
 
 void SonobusAudioProcessor::setRemotePeerChannelMuted(int index, int changroup, bool muted)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size() && changroup >= 0 && changroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->chanGroups[changroup].params.muted = muted;
@@ -4801,7 +4801,7 @@ bool SonobusAudioProcessor::getRemotePeerChannelMuted(int index, int changroup) 
 
 void SonobusAudioProcessor::setRemotePeerChannelSoloed(int index, int changroup, bool soloed)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size() && changroup >= 0 && changroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->chanGroups[changroup].params.soloed = soloed;
@@ -4844,7 +4844,7 @@ String SonobusAudioProcessor::getRemotePeerChannelGroupName(int index, int chang
 
 void SonobusAudioProcessor::setRemotePeerChannelGroupName(int index, int changroup, const String & name)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size() && changroup >= 0 && changroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->chanGroups[changroup].params.name = name;
@@ -4855,7 +4855,7 @@ void SonobusAudioProcessor::setRemotePeerChannelGroupName(int index, int changro
 
 void SonobusAudioProcessor::setRemotePeerChannelGroupCount(int index, int count)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         int newcnt = std::max(0, std::min(count, MAX_CHANGROUPS-1));
@@ -4868,7 +4868,7 @@ void SonobusAudioProcessor::setRemotePeerChannelGroupCount(int index, int count)
 
 void SonobusAudioProcessor::setRemotePeerUserName(int index, const String & name)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         auto * remote = mRemotePeers.getUnchecked(index);
         remote->userName = name;
@@ -4899,7 +4899,7 @@ bool SonobusAudioProcessor::isRemotePeerUserInGroup(const String & name) const
 
 void SonobusAudioProcessor::setRemotePeerChannelPan(int index, int changroup, int chan, float pan)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         if (changroup < MAX_CHANGROUPS) {
@@ -4936,7 +4936,7 @@ float SonobusAudioProcessor::getRemotePeerChannelPan(int index, int changroup, i
 
 void SonobusAudioProcessor::setRemotePeerChannelGroupStartAndCount(int index, int changroup, int start, int count)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size() && changroup >= 0 && changroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->chanGroups[changroup].params.chanStartIndex = start;
@@ -4961,7 +4961,7 @@ bool SonobusAudioProcessor::getRemotePeerChannelGroupStartAndCount(int index, in
 
 void SonobusAudioProcessor::setRemotePeerChannelGroupDestStartAndCount(int index, int changroup, int start, int count)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size() && changroup >= 0 && changroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->chanGroups[changroup].params.panDestStartIndex = start;
@@ -4986,7 +4986,7 @@ bool SonobusAudioProcessor::getRemotePeerChannelGroupDestStartAndCount(int index
 
 void SonobusAudioProcessor::setRemotePeerChannelGroupSendMainMix(int index, int changroup, bool mainmix)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size() && changroup >= 0 && changroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->chanGroups[changroup].params.sendMainMix = mainmix;
@@ -5007,7 +5007,7 @@ bool SonobusAudioProcessor::getRemotePeerChannelGroupSendMainMix(int index, int 
 
 bool SonobusAudioProcessor::insertRemotePeerChannelGroup(int index, int atgroup, int chstart, int chcount)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index < mRemotePeers.size() && atgroup >= 0 && atgroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         // push any existing ones down
@@ -5032,7 +5032,7 @@ bool SonobusAudioProcessor::insertRemotePeerChannelGroup(int index, int atgroup,
 
 bool SonobusAudioProcessor::removeRemotePeerChannelGroup(int index, int atgroup)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index < mRemotePeers.size() && atgroup >= 0 && atgroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         // move any existing ones after up
@@ -5051,7 +5051,7 @@ bool SonobusAudioProcessor::removeRemotePeerChannelGroup(int index, int atgroup)
 
 bool SonobusAudioProcessor::copyRemotePeerChannelGroup(int index, int fromgroup, int togroup)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index < mRemotePeers.size() && fromgroup < MAX_CHANGROUPS && togroup < MAX_CHANGROUPS) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
 
@@ -5098,7 +5098,7 @@ bool SonobusAudioProcessor::getRemotePeerViewExpanded(int index) const
 
 void SonobusAudioProcessor::setRemotePeerViewExpanded(int index, bool expanded)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     // could be -1 as index meaning all remote peers
     for (int i=0; i < mRemotePeers.size(); ++i) {
         if (index < 0 || index == i) {
@@ -5121,7 +5121,7 @@ bool SonobusAudioProcessor::getLayoutFormatChangedForRemotePeer(int index) const
 
 void SonobusAudioProcessor::restoreLayoutFormatForRemotePeer(int index)
 {
-    const ScopedReadLock sl (mCoreLock);
+    const ScopedWriteLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         restoreLayoutFormatForPeer(remote, true);
@@ -5142,7 +5142,7 @@ int SonobusAudioProcessor::getRemotePeerNominalSendChannelCount(int index) const
 
 void SonobusAudioProcessor::setRemotePeerNominalSendChannelCount(int index, int numchans)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     // could be -1 as index meaning all remote peers
     for (int i=0; i < mRemotePeers.size(); ++i) {
         if (index < 0 || index == i) {
@@ -5194,7 +5194,7 @@ int SonobusAudioProcessor::getRemotePeerOverrideSendChannelCount(int index) cons
 
 void SonobusAudioProcessor::setRemotePeerOverrideSendChannelCount(int index, int numchans)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     // could be -1 as index meaning all remote peers
     for (int i=0; i < mRemotePeers.size(); ++i) {
         if (index < 0 || index == i) {
@@ -5273,7 +5273,7 @@ void SonobusAudioProcessor::changeListenerCallback (ChangeBroadcaster* source)
 
 void SonobusAudioProcessor::setRemotePeerBufferTime(int index, float bufferMs)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->buffertimeMs = bufferMs;
@@ -5323,7 +5323,7 @@ float SonobusAudioProcessor::getRemotePeerBufferTime(int index) const
 
 void SonobusAudioProcessor::setRemotePeerAutoresizeBufferMode(int index, SonobusAudioProcessor::AutoNetBufferMode flag)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->autosizeBufferMode = flag;
@@ -5380,7 +5380,7 @@ bool SonobusAudioProcessor::getRemotePeerReceiveBufferFillRatio(int index, float
 
 void SonobusAudioProcessor::setRemotePeerRecvActive(int index, bool active)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
 
@@ -5416,7 +5416,7 @@ bool SonobusAudioProcessor::getRemotePeerRecvActive(int index) const
 
 void SonobusAudioProcessor::setRemotePeerSendAllow(int index, bool allow, bool cached)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index < mRemotePeers.size() && index >= 0) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         if (cached) {
@@ -5445,7 +5445,7 @@ bool SonobusAudioProcessor::getRemotePeerSendAllow(int index, bool cached) const
 
 void SonobusAudioProcessor::setRemotePeerRecvAllow(int index, bool allow, bool cached)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index < mRemotePeers.size() && index >= 0) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
 
@@ -5474,7 +5474,7 @@ bool SonobusAudioProcessor::getRemotePeerRecvAllow(int index, bool cached) const
 
 void SonobusAudioProcessor::setRemotePeerSoloed(int index, bool soloed)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         
@@ -5585,7 +5585,7 @@ bool SonobusAudioProcessor::getRemotePeerBlockedUs(int index) const
 
 void  SonobusAudioProcessor::resetRemotePeerPacketStats(int index)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->dataPacketsResent = 0;
@@ -5761,7 +5761,7 @@ bool  SonobusAudioProcessor::isRemotePeerRecording(int index) const
 
 bool SonobusAudioProcessor::startRemotePeerLatencyTest(int index, float durationsec)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         if (!remote->activeLatencyTest) {
@@ -5795,7 +5795,7 @@ bool SonobusAudioProcessor::startRemotePeerLatencyTest(int index, float duration
 
 bool SonobusAudioProcessor::stopRemotePeerLatencyTest(int index)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         if (remote->activeLatencyTest) {
@@ -5817,7 +5817,7 @@ bool SonobusAudioProcessor::stopRemotePeerLatencyTest(int index)
 
 void SonobusAudioProcessor::setRemotePeerSendActive(int index, bool active)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->sendActive = active;
@@ -5843,7 +5843,7 @@ bool SonobusAudioProcessor::getRemotePeerSendActive(int index) const
 
 void SonobusAudioProcessor::setRemotePeerConnected(int index, bool active)
 {
-    const ScopedReadLock sl (mCoreLock);        
+    const ScopedWriteLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
         remote->connected = active;

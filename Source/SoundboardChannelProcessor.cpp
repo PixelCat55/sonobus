@@ -450,18 +450,32 @@ void SoundboardChannelProcessor::releaseResources()
 
 void SoundboardChannelProcessor::unloadAll()
 {
-    for (const auto &item : activeSamples) {
-        item.second->unload();
-    }
+    std::vector<std::shared_ptr<SamplePlaybackManager>> managers;
+    managers.reserve(activeSamples.size());
+
+    for (const auto& item : activeSamples)
+        managers.push_back(item.second);
+
+    for (const auto& manager : managers)
+        if (manager != nullptr)
+            manager->unload();
 }
 
 void SoundboardChannelProcessor::unloadAllNonBackground()
 {
-    for (const auto &item : activeSamples) {
-        if (item.second->getSample()->getPlaybackBehaviour() != SoundSample::BACKGROUND) {
-            item.second->unload();
+    std::vector<std::shared_ptr<SamplePlaybackManager>> managers;
+    managers.reserve(activeSamples.size());
+
+    for (const auto& item : activeSamples) {
+        if (item.second != nullptr) {
+            if (auto* sample = item.second->getSample();
+                sample != nullptr && sample->getPlaybackBehaviour() != SoundSample::BACKGROUND)
+                managers.push_back(item.second);
         }
     }
+
+    for (const auto& manager : managers)
+        manager->unload();
 }
 
 void SoundboardChannelProcessor::removeSample(SoundSample& sample)

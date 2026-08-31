@@ -66,7 +66,11 @@ void SoundboardProcessor::deleteSoundboard(int index)
     auto& activeSamples = channelProcessor->getActiveSamples();
     std::vector<juce::URL> urls;
     
-    for (const auto& sample : soundboards[index].getSamples()) {
+    for (const auto& samplePtr : soundboards[index].getSamples()) {
+        if (samplePtr == nullptr)
+            continue;
+
+        auto& sample = *samplePtr;
         auto playbackManager = activeSamples.find(&sample);
         if (playbackManager != activeSamples.end()) {
             playbackManager->second->unload();
@@ -144,12 +148,11 @@ SoundSample* SoundboardProcessor::addSoundSample(String name, String absolutePat
     auto& soundboard = soundboards[sindex];
     auto& sampleList = soundboard.getSamples();
 
-    SoundSample sampleToAdd = SoundSample(std::move(name), URL(File(absolutePath)));
-    sampleList.emplace_back(std::move(sampleToAdd));
+    sampleList.emplace_back(std::make_unique<SoundSample>(std::move(name), URL(File(absolutePath))));
 
     saveToDisk();
 
-    return &sampleList[sampleList.size() - 1];
+    return sampleList.back().get();
 }
 
 bool SoundboardProcessor::moveSoundSample(int fromSampleIndex, int toSampleIndex, std::optional<int> index)
@@ -169,18 +172,14 @@ bool SoundboardProcessor::moveSoundSample(int fromSampleIndex, int toSampleIndex
         return false;
     }
 
-    // stop all playback, just in case
-    stopAllPlayback();
-    
-    auto sampcopy = sampleList[fromSampleIndex];
-    auto destiter = std::next(sampleList.begin(), toSampleIndex);
-    
-    sampleList.insert(destiter, std::move(sampcopy));
+    auto movedSample = std::move(sampleList[static_cast<size_t>(fromSampleIndex)]);
+    sampleList.erase(sampleList.begin() + fromSampleIndex);
 
-    // remove the original
-    int origpos = fromSampleIndex < toSampleIndex ? fromSampleIndex : fromSampleIndex+1;
-    auto origiter = std::next(sampleList.begin(), origpos);
-    sampleList.erase(origiter);
+    if (toSampleIndex > fromSampleIndex)
+        --toSampleIndex;
+
+    toSampleIndex = jlimit(0, static_cast<int>(sampleList.size()), toSampleIndex);
+    sampleList.insert(sampleList.begin() + toSampleIndex, std::move(movedSample));
     
     saveToDisk();
 
@@ -216,8 +215,8 @@ bool SoundboardProcessor::isSampleURLInUse(const juce::URL & url)
     for (auto& soundboard : soundboards) {
         auto& sampleList = soundboard.getSamples();
         
-        for (auto & sample : sampleList) {
-            if (sample.getFileURL() == url) {
+        for (auto& samplePtr : sampleList) {
+            if (samplePtr != nullptr && samplePtr->getFileURL() == url) {
                 return true;
             }
         }
@@ -243,7 +242,10 @@ bool SoundboardProcessor::deleteSoundSample(SoundSample& sampleToDelete, std::op
     stopAllPlayback();
 
     for (auto iter = sampleList.begin(); iter != sampleList.end(); ++iter) {
-        auto& sample = *iter;
+        if (*iter == nullptr)
+            continue;
+
+        auto& sample = **iter;
         if (&sample == &sampleToDelete) {
             // If it is currently playing, unload
             auto& activeSamples = channelProcessor->getActiveSamples();
@@ -285,7 +287,11 @@ void SoundboardProcessor::onPlaybackFinished(SamplePlaybackManager* playbackMana
                 
                 bool playit = false;
                 bool foundboard = false;
-                for (auto & samp : sampleList) {
+                for (auto& sampPtr : sampleList) {
+                    if (sampPtr == nullptr)
+                        continue;
+
+                    auto& samp = *sampPtr;
                     if (playit) {
                         // we are the next, trigger playback
                         DBG("Triggering next sample");

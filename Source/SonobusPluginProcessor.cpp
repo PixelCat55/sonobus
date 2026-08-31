@@ -1405,7 +1405,7 @@ void SonobusAudioProcessor::setDefaultAutoresizeBufferMode(AutoNetBufferMode fla
 
 void SonobusAudioProcessor::setRemotePeerAudioCodecFormat(int index, int formatIndex)
 {
-    if (formatIndex >= mAudioFormats.size() || index >= mRemotePeers.size()) return;
+    if (formatIndex < 0 || formatIndex >= mAudioFormats.size() || index < 0 || index >= mRemotePeers.size()) return;
     
     const AudioCodecFormatInfo & info = mAudioFormats.getReference(formatIndex);
 
@@ -1430,7 +1430,7 @@ void SonobusAudioProcessor::setRemotePeerAudioCodecFormat(int index, int formatI
 
 int SonobusAudioProcessor::getRemotePeerAudioCodecFormat(int index) const
 {
-    if (index >= mRemotePeers.size()) return -1;
+    if (index < 0 || index >= mRemotePeers.size()) return -1;
     
     const ScopedReadLock sl (mCoreLock);        
     auto remote = mRemotePeers.getUnchecked(index);
@@ -1439,7 +1439,7 @@ int SonobusAudioProcessor::getRemotePeerAudioCodecFormat(int index) const
 
 bool SonobusAudioProcessor::getRemotePeerReceiveAudioCodecFormat(int index, AudioCodecFormatInfo & retinfo) const
 {
-    if (index >= mRemotePeers.size()) return false;
+    if (index < 0 || index >= mRemotePeers.size()) return false;
     
     const ScopedReadLock sl (mCoreLock);
     auto remote = mRemotePeers.getUnchecked(index);
@@ -1449,7 +1449,7 @@ bool SonobusAudioProcessor::getRemotePeerReceiveAudioCodecFormat(int index, Audi
 
 bool SonobusAudioProcessor::setRequestRemotePeerSendAudioCodecFormat(int index, int formatIndex)
 {
-    if (formatIndex >= mAudioFormats.size() || index >= mRemotePeers.size()) return false;
+    if (formatIndex >= mAudioFormats.size() || index < 0 || index >= mRemotePeers.size()) return false;
     
 
     const ScopedReadLock sl (mCoreLock);

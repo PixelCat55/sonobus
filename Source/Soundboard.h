@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "vector"
+#include <deque>
 #include "JuceHeader.h"
 #include "SoundboardButtonColors.h"
 
@@ -276,7 +276,7 @@ public:
     /**
      * Get the list of sound samples that are part of this soundboard.
      */
-    std::vector<SoundSample>& getSamples();
+    std::deque<SoundSample>& getSamples();
 
     /**
      * Serialize the soundboard.
@@ -317,5 +317,5 @@ private:
     /**
      * All the sounds that are available on the soundboard.
      */
-    std::vector<SoundSample> samples;
+    std::deque<SoundSample> samples;
 };

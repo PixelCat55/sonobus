@@ -7817,15 +7817,6 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 continue;                
             }
 
-            // just in case, should be exceedingly rare this is necessary
-            if (remote->workBuffer.getNumSamples() < currSamplesPerBlock
-                || remote->recvChannels > remote->workBuffer.getNumChannels()
-                || mainBusOutputChannels > remote->workBuffer.getNumChannels()) {
-                remote->workBuffer.setSize(jmax(2, jmax(mainBusOutputChannels, remote->recvChannels)), currSamplesPerBlock, false, false, true);
-            }
-
-            remote->workBuffer.clear(0, numSamples);
-
             // calculate fill ratio before processing the sink
             float retratio = 0.0f;
             if (remote->oursink->get_sourceoption(remote->endpoint, remote->remoteSourceId, aoo_opt_buffer_fill_ratio, &retratio, sizeof(retratio)) > 0) {

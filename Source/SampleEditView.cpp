@@ -468,24 +468,28 @@ void SampleEditView::browseFilePath()
     );
     auto folderFlags = FileBrowserComponent::openMode | FileBrowserComponent::canSelectFiles;
 
-    mFileChooser->launchAsync(folderFlags, [this](const FileChooser& chooser) {
+    Component::SafePointer<SampleEditView> safeThis (this);
+    mFileChooser->launchAsync(folderFlags, [safeThis](const FileChooser& chooser) mutable {
+        if (safeThis == nullptr)
+            return;
+
         URL chosenUrl = chooser.getURLResult();
 
         if (chosenUrl.isEmpty()) {
-            mFilePathInput->clear();
+            safeThis->mFilePathInput->clear();
         }
         else {
             if (chosenUrl.isLocalFile()) {
                 auto lfile = chosenUrl.getLocalFile();
-                mFilePathInput->setText(lfile.getFullPathName(), true);
+                safeThis->mFilePathInput->setText(lfile.getFullPathName(), true);
                 
-                if (lastOpenedDirectory != nullptr) {
-                    *lastOpenedDirectory = lfile.getParentDirectory().getFullPathName();
+                if (safeThis->lastOpenedDirectory != nullptr) {
+                    *safeThis->lastOpenedDirectory = lfile.getParentDirectory().getFullPathName();
                 }
             }
             
-            mFileURL = chosenUrl;
-            inferSampleName();
+            safeThis->mFileURL = chosenUrl;
+            safeThis->inferSampleName();
         }
 
     });

@@ -1,13 +1,16 @@
-name: Build Enhanced Windows SonoBus
+name: Build SonoBus QoL and Bug Fixes
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+      - qol-bugfix-optimization-audit
     paths:
       - "Source/**"
       - "CMakeLists.txt"
+      - "deps/**"
+      - "JUCE/**"
       - ".github/workflows/build-windows-native-tray.yml"
 
 permissions:
@@ -79,7 +82,7 @@ jobs:
       - name: Upload SonoBus
         uses: actions/upload-artifact@v4
         with:
-          name: SonoBus-Windows-x64-Enhanced
+          name: SonoBus-Windows-x64-QoL-Bug-Fixes
           path: artifact/SonoBus.exe
           if-no-files-found: error
           retention-days: 30

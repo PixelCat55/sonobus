@@ -428,7 +428,9 @@ public:
             // if we are notified to send, the wait will return sooner than the timeout
 
             if (shouldwait) {
-                _processor.mSendWaitable.wait(20);
+                const bool idle = ! _processor.mIsConnectedToServer.get()
+                                  && _processor.getNumberRemotePeers() == 0;
+                _processor.mSendWaitable.wait(idle ? 100 : 20);
             }
 
             auto sentinel = _processor.mNeedSendSentinel.get();
@@ -456,8 +458,9 @@ public:
         setPriority(Thread::Priority::highest);
 
         while (!threadShouldExit()) {
-         
-            if (_processor.mUdpSocket->waitUntilReady(true, 20) == 1) {
+            const bool idle = ! _processor.mIsConnectedToServer.get()
+                              && _processor.getNumberRemotePeers() == 0;
+            if (_processor.mUdpSocket->waitUntilReady(true, idle ? 100 : 20) == 1) {
                 _processor.doReceiveData();
             }
         }
@@ -478,10 +481,11 @@ public:
     void run() override {
 
         while (!threadShouldExit()) {
-         
-            Thread::sleep(20);
-            
-            _processor.handleEvents();                       
+            const bool idle = ! _processor.mIsConnectedToServer.get()
+                              && _processor.getNumberRemotePeers() == 0;
+            Thread::sleep(idle ? 100 : 20);
+
+            _processor.handleEvents();
         }
         
         DBG("Event thread finishing");

@@ -269,6 +269,10 @@ public:
      * @param name The name of the soundboard.
      */
     explicit Soundboard(String name);
+    Soundboard(const Soundboard& other);
+    Soundboard& operator=(const Soundboard& other);
+    Soundboard(Soundboard&&) noexcept = default;
+    Soundboard& operator=(Soundboard&&) noexcept = default;
 
     String getName() const;
 

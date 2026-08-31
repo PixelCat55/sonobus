@@ -63,6 +63,13 @@ public:
     void reloadPlaybackSettingsFromSample();
 
     /**
+     * Permanently detaches this playback manager from its SoundSample.
+     * Used before the sample object is destroyed so queued callbacks can never
+     * dereference stale sample memory.
+     */
+    void detachFromSample();
+
+    /**
      * Stop and unload current playback. Removes this playback manager from the channel processor.
      */
     void unload();
@@ -221,6 +228,11 @@ public:
      * Stops all playing samples from playing that aren't background mode
      */
     void unloadAllNonBackground();
+
+    /**
+     * Stops and removes playback associated with a sample before that sample is destroyed.
+     */
+    void removeSample(SoundSample& sample);
 
     void notifyStopped(SamplePlaybackManager* samplePlaybackManager);
 

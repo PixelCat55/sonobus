@@ -22,6 +22,11 @@ SoundboardProcessor::~SoundboardProcessor()
 
 Soundboard& SoundboardProcessor::addSoundboard(const String& name, const bool select)
 {
+    // Reordering the soundboard vector can move containers that own samples.
+    // Stop active playback before structural changes so playback managers never
+    // retain addresses across a container reorder.
+    stopAllPlayback();
+
     auto newSoundboard = Soundboard(name);
     soundboards.push_back(std::move(newSoundboard));
 
@@ -37,6 +42,11 @@ Soundboard& SoundboardProcessor::addSoundboard(const String& name, const bool se
 
 void SoundboardProcessor::renameSoundboard(int index, String newName)
 {
+    if (index < 0 || index >= static_cast<int>(soundboards.size()))
+        return;
+
+    stopAllPlayback();
+
     auto& toRename = soundboards[index];
     toRename.setName(std::move(newName));
 
@@ -46,7 +56,13 @@ void SoundboardProcessor::renameSoundboard(int index, String newName)
 
 void SoundboardProcessor::deleteSoundboard(int index)
 {
-    // When a sample from this soundboard was playing, stop playback
+    if (index < 0 || index >= static_cast<int>(soundboards.size()))
+        return;
+
+    // Erasing/reordering soundboards may move the containers that own samples,
+    // so make all sample pointers quiescent before changing the structure.
+    stopAllPlayback();
+
     auto& activeSamples = channelProcessor->getActiveSamples();
     std::vector<juce::URL> urls;
     
@@ -85,7 +101,7 @@ void SoundboardProcessor::selectSoundboard(int index)
         selectedSoundboardIndex = {};
     }
     else {
-        selectedSoundboardIndex = jmax(0, jmin(index, static_cast<int>(getNumberOfSoundboards())));
+        selectedSoundboardIndex = jlimit(0, static_cast<int>(getNumberOfSoundboards()) - 1, index);
     }
 
     saveToDisk();
@@ -103,7 +119,9 @@ void SoundboardProcessor::reorderSoundboards()
     }
     else {
         auto iterator = std::find(originalIndices.begin(), originalIndices.end(), originalSelectedIndex);
-        selectedSoundboardIndex = { std::distance(originalIndices.begin(), iterator) };
+        selectedSoundboardIndex = iterator != originalIndices.end()
+                                   ? std::optional<int>(static_cast<int>(std::distance(originalIndices.begin(), iterator)))
+                                   : std::optional<int>(0);
     }
 
     // Above was just a sort preview and logic on that. End with actually sorting the list of soundboards.
@@ -146,7 +164,8 @@ bool SoundboardProcessor::moveSoundSample(int fromSampleIndex, int toSampleIndex
     auto& soundboard = soundboards[sindex];
     auto& sampleList = soundboard.getSamples();
 
-    if (fromSampleIndex < 0 || fromSampleIndex >= sampleList.size()) {
+    if (fromSampleIndex < 0 || fromSampleIndex >= static_cast<int>(sampleList.size())
+        || toSampleIndex < 0 || toSampleIndex > static_cast<int>(sampleList.size())) {
         return false;
     }
 
@@ -218,6 +237,10 @@ bool SoundboardProcessor::deleteSoundSample(SoundSample& sampleToDelete, std::op
 
     auto& soundboard = soundboards[sindex];
     auto& sampleList = soundboard.getSamples();
+
+    // Erasing from a deque can invalidate references to other elements. Active
+    // playback managers keep SoundSample pointers, so stop them before erase.
+    stopAllPlayback();
 
     for (auto iter = sampleList.begin(); iter != sampleList.end(); ++iter) {
         auto& sample = *iter;
@@ -318,7 +341,13 @@ void SoundboardProcessor::readSoundboardsFromFile(const File& file)
     }
 
     XmlDocument doc(file);
-    auto tree = ValueTree::fromXml(*doc.getDocumentElement());
+    auto xml = doc.getDocumentElement();
+    if (xml == nullptr)
+        return;
+
+    auto tree = ValueTree::fromXml(*xml);
+    if (! tree.isValid())
+        return;
 
     int selected = tree.getProperty(SELECTED_KEY);
     selectedSoundboardIndex = selected >= 0 ? std::optional<size_t>(selected) : std::nullopt;

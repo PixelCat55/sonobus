@@ -22,11 +22,6 @@ SoundboardProcessor::~SoundboardProcessor()
 
 Soundboard& SoundboardProcessor::addSoundboard(const String& name, const bool select)
 {
-    // Reordering the soundboard vector can move containers that own samples.
-    // Stop active playback before structural changes so playback managers never
-    // retain addresses across a container reorder.
-    stopAllPlayback();
-
     auto newSoundboard = Soundboard(name);
     soundboards.push_back(std::move(newSoundboard));
 
@@ -45,8 +40,6 @@ void SoundboardProcessor::renameSoundboard(int index, String newName)
     if (index < 0 || index >= static_cast<int>(soundboards.size()))
         return;
 
-    stopAllPlayback();
-
     auto& toRename = soundboards[index];
     toRename.setName(std::move(newName));
 
@@ -59,10 +52,6 @@ void SoundboardProcessor::deleteSoundboard(int index)
     if (index < 0 || index >= static_cast<int>(soundboards.size()))
         return;
 
-    // Erasing/reordering soundboards may move the containers that own samples,
-    // so make all sample pointers quiescent before changing the structure.
-    stopAllPlayback();
-
     auto& activeSamples = channelProcessor->getActiveSamples();
     std::vector<juce::URL> urls;
     
@@ -71,10 +60,7 @@ void SoundboardProcessor::deleteSoundboard(int index)
             continue;
 
         auto& sample = *samplePtr;
-        auto playbackManager = activeSamples.find(&sample);
-        if (playbackManager != activeSamples.end()) {
-            playbackManager->second->unload();
-        }
+        channelProcessor->removeSample(sample);
         urls.push_back(sample.getFileURL());
     }
 
@@ -237,22 +223,13 @@ bool SoundboardProcessor::deleteSoundSample(SoundSample& sampleToDelete, std::op
     auto& soundboard = soundboards[sindex];
     auto& sampleList = soundboard.getSamples();
 
-    // Erasing from a deque can invalidate references to other elements. Active
-    // playback managers keep SoundSample pointers, so stop them before erase.
-    stopAllPlayback();
-
     for (auto iter = sampleList.begin(); iter != sampleList.end(); ++iter) {
         if (*iter == nullptr)
             continue;
 
         auto& sample = **iter;
         if (&sample == &sampleToDelete) {
-            // If it is currently playing, unload
-            auto& activeSamples = channelProcessor->getActiveSamples();
-            auto playbackManager = activeSamples.find(&sample);
-            if (playbackManager != activeSamples.end()) {
-                playbackManager->second->unload();
-            }
+            channelProcessor->removeSample(sample);
 
             auto url = sample.getFileURL();
             

@@ -39,13 +39,13 @@ bool VersionInfo::isNewerVersionThanCurrent()
     auto currentTokens = StringArray::fromTokens (ProjectInfo::versionString, ".", {});
     auto thisTokens    = StringArray::fromTokens (versionString, ".", {});
 
-    jassert (thisTokens.size() >= 2 && thisTokens.size() >= 2);
+    jassert (currentTokens.size() >= 2 && thisTokens.size() >= 2);
 
     if (currentTokens[0].getIntValue() == thisTokens[0].getIntValue())
     {
         // check for 'b' in second token
-        if (thisTokens[1].contains("b")) {            
-            return currentTokens[1].compareIgnoreCase(thisTokens[1]); 
+        if (thisTokens[1].contains("b")) {
+            return currentTokens[1].compareIgnoreCase (thisTokens[1]) < 0;
         }
         else {
             if (currentTokens[1].getIntValue() == thisTokens[1].getIntValue()) {

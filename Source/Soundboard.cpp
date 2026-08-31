@@ -196,7 +196,7 @@ SoundSample SoundSample::deserialize(const ValueTree tree)
 }
 
 Soundboard::Soundboard(String newName)
-        : name(std::move(newName)), samples(std::deque<SoundSample>())
+        : name(std::move(newName)), samples()
 {}
 
 String Soundboard::getName() const
@@ -209,7 +209,7 @@ void Soundboard::setName(String newName)
     this->name = std::move(newName);
 }
 
-std::deque<SoundSample>& Soundboard::getSamples()
+std::vector<std::unique_ptr<SoundSample>>& Soundboard::getSamples()
 {
     return this->samples;
 }
@@ -225,8 +225,9 @@ ValueTree Soundboard::serialize()
     tree.addChild(samplesTree, 0, nullptr);
 
     int i = 0;
-    for (auto &sample : samples) {
-        samplesTree.addChild(sample.serialize(), i++, nullptr);
+    for (auto& sample : samples) {
+        if (sample != nullptr)
+            samplesTree.addChild(sample->serialize(), i++, nullptr);
     }
 
     return tree;
@@ -240,7 +241,7 @@ Soundboard Soundboard::deserialize(ValueTree tree)
     auto& samples = soundboard.getSamples();
     for( int i = 0; i < samplesTree.getNumChildren(); ++i )
     {
-        samples.emplace_back(SoundSample::deserialize(samplesTree.getChild(i)));
+        samples.emplace_back(std::make_unique<SoundSample>(SoundSample::deserialize(samplesTree.getChild(i))));
     }
 
     return soundboard;

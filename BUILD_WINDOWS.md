@@ -1,6 +1,6 @@
 # Windows Build Guide
 
-This fork's Windows tray and autostart features are already part of the source tree. No patch script or helper program is required before compiling.
+This fork's Windows QoL and Bug Fixes changes, including tray and autostart features, are already part of the source tree. No patch script or helper program is required before compiling.
 
 ## Requirements
 

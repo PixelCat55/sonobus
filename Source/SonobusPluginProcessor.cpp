@@ -1405,7 +1405,7 @@ void SonobusAudioProcessor::setDefaultAutoresizeBufferMode(AutoNetBufferMode fla
 
 void SonobusAudioProcessor::setRemotePeerAudioCodecFormat(int index, int formatIndex)
 {
-    if (formatIndex >= mAudioFormats.size() || index >= mRemotePeers.size()) return;
+    if (formatIndex < 0 || formatIndex >= mAudioFormats.size() || index < 0 || index >= mRemotePeers.size()) return;
     
     const AudioCodecFormatInfo & info = mAudioFormats.getReference(formatIndex);
 
@@ -1430,7 +1430,7 @@ void SonobusAudioProcessor::setRemotePeerAudioCodecFormat(int index, int formatI
 
 int SonobusAudioProcessor::getRemotePeerAudioCodecFormat(int index) const
 {
-    if (index >= mRemotePeers.size()) return -1;
+    if (index < 0 || index >= mRemotePeers.size()) return -1;
     
     const ScopedReadLock sl (mCoreLock);        
     auto remote = mRemotePeers.getUnchecked(index);
@@ -1439,7 +1439,7 @@ int SonobusAudioProcessor::getRemotePeerAudioCodecFormat(int index) const
 
 bool SonobusAudioProcessor::getRemotePeerReceiveAudioCodecFormat(int index, AudioCodecFormatInfo & retinfo) const
 {
-    if (index >= mRemotePeers.size()) return false;
+    if (index < 0 || index >= mRemotePeers.size()) return false;
     
     const ScopedReadLock sl (mCoreLock);
     auto remote = mRemotePeers.getUnchecked(index);
@@ -1449,7 +1449,7 @@ bool SonobusAudioProcessor::getRemotePeerReceiveAudioCodecFormat(int index, Audi
 
 bool SonobusAudioProcessor::setRequestRemotePeerSendAudioCodecFormat(int index, int formatIndex)
 {
-    if (formatIndex >= mAudioFormats.size() || index >= mRemotePeers.size()) return false;
+    if (formatIndex >= mAudioFormats.size() || index < 0 || index >= mRemotePeers.size()) return false;
     
 
     const ScopedReadLock sl (mCoreLock);
@@ -7104,8 +7104,12 @@ void SonobusAudioProcessor::setupSourceFormatsForAll()
 
     int i=0;
     for (auto s : mRemotePeers) {
-        if (s->workBuffer.getNumSamples() < currSamplesPerBlock) {
-            s->workBuffer.setSize(jmax(2, s->recvChannels), currSamplesPerBlock, false, false, true);
+        const int requiredWorkChannels = jmax (2, jmax (outchannels, s->recvChannels));
+        if (s->workBuffer.getNumSamples() < currSamplesPerBlock
+            || s->workBuffer.getNumChannels() < requiredWorkChannels) {
+            // Allocate/reconfigure outside processBlock so normal real-time
+            // processing does not need to grow this buffer.
+            s->workBuffer.setSize (requiredWorkChannels, currSamplesPerBlock, false, false, true);
         }
 
         s->sendChannels = isAnythingRoutedToPeer(i) ? outchannels : s->nominalSendChannels <= 0 ? inchannels : s->nominalSendChannels;
@@ -7816,15 +7820,6 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 ++rindex;
                 continue;                
             }
-
-            // just in case, should be exceedingly rare this is necessary
-            if (remote->workBuffer.getNumSamples() < currSamplesPerBlock
-                || remote->recvChannels > remote->workBuffer.getNumChannels()
-                || mainBusOutputChannels > remote->workBuffer.getNumChannels()) {
-                remote->workBuffer.setSize(jmax(2, jmax(mainBusOutputChannels, remote->recvChannels)), currSamplesPerBlock, false, false, true);
-            }
-
-            remote->workBuffer.clear(0, numSamples);
 
             // calculate fill ratio before processing the sink
             float retratio = 0.0f;

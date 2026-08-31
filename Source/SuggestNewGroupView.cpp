@@ -113,9 +113,19 @@ SuggestNewGroupView::SuggestNewGroupView(SonobusAudioProcessor& proc) :  smallLN
             processor.suggestNewGroupToPeers(mGroupEditor->getText(), mGroupPassEditor->getText(), peers, mPublicToggle->getToggleState());
 
             if (connectToGroup) {
-                Timer::callAfterDelay(500, [this] {
-                    connectToGroup(mGroupEditor->getText(), mGroupPassEditor->getText(), mPublicToggle->getToggleState());
-                    dismissSelf();
+                const auto groupName = mGroupEditor->getText();
+                const auto groupPass = mGroupPassEditor->getText();
+                const auto isPublic = mPublicToggle->getToggleState();
+                Component::SafePointer<SuggestNewGroupView> safeThis (this);
+
+                Timer::callAfterDelay (500, [safeThis, groupName, groupPass, isPublic]() mutable {
+                    if (safeThis == nullptr)
+                        return;
+
+                    if (safeThis->connectToGroup)
+                        safeThis->connectToGroup (groupName, groupPass, isPublic);
+
+                    safeThis->dismissSelf();
                 });
             }
         }

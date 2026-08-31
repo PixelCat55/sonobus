@@ -2,18 +2,19 @@
 
 This repository is an **unofficial fork of SonoBus** (`sonosaurus/sonobus`).
 
-It does **not** claim ownership of the original SonoBus project, branding, design, source history, or upstream contributions. The purpose of this fork is simply to maintain a small set of clearly documented quality-of-life modifications on top of the original project.
+It does **not** claim ownership of the original SonoBus project, branding, design, source history, or upstream contributions. The purpose of this fork is to maintain clearly documented quality-of-life improvements, bug fixes, and conservative background-efficiency work on top of the original project.
 
 SonoBus remains licensed under the **GNU General Public License v3.0 (GPLv3)**, together with the repository's existing license exception where applicable. Original copyright and license notices are preserved.
 
 ## Fork goals
 
-The fork is intended to stay close to upstream SonoBus while adding practical desktop conveniences, primarily for Windows users. Changes should be:
+The fork is intended to stay close to upstream SonoBus while adding practical QoL improvements, bug fixes, and lightweight background behavior, primarily for Windows users. Changes should be:
 
-- small and understandable;
+- small, understandable, and testable;
 - optional where possible;
 - implemented directly in source rather than through external helper processes;
 - documented transparently;
+- avoid unnecessary background UI work while preserving real-time audio/network behavior;
 - easy to distinguish from upstream SonoBus behavior.
 
 ## Current fork-specific modifications
@@ -67,6 +68,24 @@ The startup entry stores the exact executable path that enabled the option. If t
 Runtime status:
 
 This behavior has been compiled successfully through the repository's Windows GitHub Actions build and confirmed working in normal Windows runtime testing by the fork maintainer.
+
+### 3. Stability and background-efficiency hardening
+
+**Started:** 2026-08-31
+
+The QoL and Bug Fixes branch begins a conservative hardening pass based on a full-source audit.
+
+Initial changes:
+
+- soundboard sample storage keeps sample addresses stable when new samples are appended, preventing active playback managers from being left with invalid pointers after container growth;
+- delayed GUI callbacks in several frequently used views use JUCE safe pointers instead of queued raw component pointers;
+- the main editor skips peer/layout/status UI polling while the complete window is hidden in the Windows tray, while audio and network processing continue unchanged;
+- Windows screen-saver suppression is disabled while SonoBus is tray-hidden so a background instance does not keep Windows awake unnecessarily;
+- redundant per-peer audio buffer work was removed and peer work buffers are preallocated during configuration to reduce real-time allocation pressure;
+- the inherited beta-version comparison bug is corrected;
+- the Windows CI scope is expanded for the QoL and Bug Fixes development work.
+
+Per maintainer direction, this hardening pass deliberately does **not** change SonoBus password handling/storage or transport encryption behavior.
 
 ## Build integration
 

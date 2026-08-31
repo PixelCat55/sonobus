@@ -1,10 +1,10 @@
-# SonoBus — Windows Little Features Fork
+# SonoBus — QoL and Bug Fixes Fork
 
-> **Unofficial community fork of [SonoBus](https://github.com/sonosaurus/sonobus)** with a small set of Windows quality-of-life additions.
+> **Unofficial community fork of [SonoBus](https://github.com/sonosaurus/sonobus)** focused on practical quality-of-life improvements, bug fixes, and lightweight background operation.
 >
 > The original SonoBus project, application, design, and upstream work belong to **Jesse Chappell / Sonosaurus and the SonoBus contributors**. This fork does **not** claim ownership of the original project. It only maintains clearly documented modifications on top of the upstream source.
 
-This fork keeps SonoBus's normal behavior intact while adding a few convenient Windows desktop features that are useful for leaving SonoBus running in the background.
+This fork keeps SonoBus recognizable and compatible while adding practical Windows QoL features, targeted bug fixes, and conservative efficiency improvements for users who leave SonoBus running in the background.
 
 ## What this fork adds
 
@@ -48,11 +48,12 @@ For manual compilation details, see **[BUILD_WINDOWS.md](BUILD_WINDOWS.md)**.
 
 ## Fork philosophy
 
-This is intentionally a **quality-of-life fork**, not a replacement project or a rebranding of SonoBus. The goals are to:
+This is intentionally a **QoL and Bug Fixes fork**, not a replacement project or a rebranding of SonoBus. The goals are to:
 
 - keep upstream SonoBus recognizable and compatible;
-- make small, practical desktop improvements where useful;
+- make practical QoL improvements and fix reproducible defects where useful;
 - preserve original copyright and attribution;
+- keep background operation lightweight without compromising audio/network behavior;
 - keep every fork-specific change visible in source control;
 - remain under the same open-source licensing terms as the upstream project.
 

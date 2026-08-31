@@ -229,8 +229,10 @@ void ChatView::resized()
             // call resized again shortly for some time until the keyboard height is something
             DBG("Calling delayed resize:" << display->keyboardInsets.getTop() << " " << display->keyboardInsets.getBottom() << " " << display->keyboardInsets.getLeft() << " " <<
                 display->keyboardInsets.getRight());
-            Timer::callAfterDelay(200, [this]() {
-                resized();
+            Component::SafePointer<ChatView> safeThis (this);
+            Timer::callAfterDelay (200, [safeThis]() mutable {
+                if (safeThis != nullptr)
+                    safeThis->resized();
             });
         }
 #elif JUCE_ANDROID

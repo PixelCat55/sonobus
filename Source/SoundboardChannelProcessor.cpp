@@ -79,8 +79,24 @@ bool SamplePlaybackManager::loadFileFromSample(TimeSliceThread &fileReadThread)
 
 void SamplePlaybackManager::reloadPlaybackSettingsFromSample()
 {
+    if (sample == nullptr)
+        return;
+
     transportSource.setLooping(sample->getEndPlaybackBehaviour() == SoundSample::LOOP_AT_END);
     transportSource.setGain(sample->getGain());
+}
+
+void SamplePlaybackManager::detachFromSample()
+{
+    stopTimer();
+    transportSource.removeChangeListener(this);
+    transportSource.stop();
+    intentionallyStopped = true;
+
+    if (sample != nullptr)
+        sample->setLastPlaybackPosition(transportSource.getCurrentPosition());
+
+    sample = nullptr;
 }
 
 void SamplePlaybackManager::unload()
@@ -88,12 +104,18 @@ void SamplePlaybackManager::unload()
     stopTimer();
     transportSource.stop();
     intentionallyStopped = true;
-    sample->setLastPlaybackPosition(transportSource.getCurrentPosition());
+
+    if (sample != nullptr)
+        sample->setLastPlaybackPosition(transportSource.getCurrentPosition());
+
     notifyPlaybackPosition(true);
 }
 
 void SamplePlaybackManager::play()
 {
+    if (sample == nullptr)
+        return;
+
     transportSource.start();
     startTimerHz(TIMER_HZ);
     intentionallyStopped = false;
@@ -151,6 +173,9 @@ void SamplePlaybackManager::timerCallback()
 
 void SamplePlaybackManager::changeListenerCallback(ChangeBroadcaster* source)
 {
+    if (sample == nullptr)
+        return;
+
     if (!transportSource.isPlaying() && transportSource.getCurrentPosition() >= transportSource.getLengthInSeconds()) {
         // We are at the end, return to start
         transportSource.setPosition(0.0);
@@ -439,8 +464,22 @@ void SoundboardChannelProcessor::unloadAllNonBackground()
     }
 }
 
+void SoundboardChannelProcessor::removeSample(SoundSample& sample)
+{
+    auto existingManager = activeSamples.find(&sample);
+    if (existingManager == activeSamples.end())
+        return;
+
+    auto manager = existingManager->second;
+    manager->detachFromSample();
+    mixer.removeInputSource(manager->getAudioSource());
+    activeSamples.erase(existingManager);
+}
+
 void SoundboardChannelProcessor::notifyStopped(SamplePlaybackManager* samplePlaybackManager)
 {
     mixer.removeInputSource(samplePlaybackManager->getAudioSource());
-    activeSamples.erase(samplePlaybackManager->getSample());
+
+    if (auto* sample = samplePlaybackManager->getSample())
+        activeSamples.erase(sample);
 }

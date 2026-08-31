@@ -370,7 +370,7 @@ void SoundboardView::rebuildButtons()
     buttonContainer.removeAllChildren();
 
     auto selectedBoardIndex = mBoardSelectComboBox->getSelectedItemIndex();
-    if (selectedBoardIndex >= processor->getNumberOfSoundboards()) {
+    if (selectedBoardIndex < 0 || selectedBoardIndex >= processor->getNumberOfSoundboards()) {
         return;
     }
 
@@ -513,7 +513,7 @@ void SoundboardView::mouseDrag (const MouseEvent& event)
 void SoundboardView::mouseUp (const MouseEvent& event)
 {
     auto selectedBoardIndex = mBoardSelectComboBox->getSelectedItemIndex();
-    if (selectedBoardIndex >= processor->getNumberOfSoundboards()) {
+    if (selectedBoardIndex < 0 || selectedBoardIndex >= processor->getNumberOfSoundboards()) {
         return;
     }
     
@@ -633,7 +633,7 @@ bool SoundboardView::triggerSampleAtIndex(int sampleIndex)
     }
 
     auto selectedSoundboardIndex = mBoardSelectComboBox->getSelectedItemIndex();
-    if (selectedSoundboardIndex >= getSoundboardProcessor()->getNumberOfSoundboards()) {
+    if (selectedSoundboardIndex < 0 || selectedSoundboardIndex >= getSoundboardProcessor()->getNumberOfSoundboards()) {
         return false;
     }
 
@@ -897,7 +897,7 @@ void SoundboardView::clickedEditSoundSample(Component& button, SoundSample& samp
 void SoundboardView::applyOptionsToAll(SoundSample & fromsample)
 {
     auto selectedSoundboardIndex = mBoardSelectComboBox->getSelectedItemIndex();
-    if (selectedSoundboardIndex >= getSoundboardProcessor()->getNumberOfSoundboards()) {
+    if (selectedSoundboardIndex < 0 || selectedSoundboardIndex >= getSoundboardProcessor()->getNumberOfSoundboards()) {
         return;
     }
 
@@ -978,7 +978,7 @@ bool SoundboardView::processKeystroke(const KeyPress& keyPress)
 
     // Look for custom keybinds.
     auto selectedSoundboardIndex = mBoardSelectComboBox->getSelectedItemIndex();
-    if (selectedSoundboardIndex >= getSoundboardProcessor()->getNumberOfSoundboards()) {
+    if (selectedSoundboardIndex < 0 || selectedSoundboardIndex >= getSoundboardProcessor()->getNumberOfSoundboards()) {
         return false;
     }
 

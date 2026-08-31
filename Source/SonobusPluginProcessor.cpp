@@ -1116,7 +1116,7 @@ void SonobusAudioProcessor::stopAooServer()
 
 bool SonobusAudioProcessor::setCurrentUsername(const String & name)
 {
-    if (mIsConnectedToServer) return false;
+    if (mIsConnectedToServer.get()) return false;
 
     mCurrentUsername = name;
     return true;
@@ -1152,7 +1152,7 @@ bool SonobusAudioProcessor::isConnectedToServer() const
 {
     if (!mAooClient) return false;
 
-    return mIsConnectedToServer;    
+    return mIsConnectedToServer.get();    
 }
 
 bool SonobusAudioProcessor::disconnectFromServer()
@@ -3503,7 +3503,7 @@ int32_t SonobusAudioProcessor::handleSourceEvents(const aoo_event ** events, int
                     if (peer) {
                         // we already have a peer for this, interesting
                         DBG("Already had remote peer for " <<   es->ipaddr << ":" << es->port << "  ourId: " << peer->ourId);
-                    } else if (!mIsConnectedToServer) {
+                    } else if (!mIsConnectedToServer.get()) {
                         peer = doAddRemotePeerIfNecessary(es);
                     }
                     else {
@@ -4694,6 +4694,7 @@ bool SonobusAudioProcessor::removeRemotePeer(int index, bool sendblock)
 
 int SonobusAudioProcessor::getNumberRemotePeers() const
 {
+    const ScopedReadLock sl (mCoreLock);
     return mRemotePeers.size();
 }
 

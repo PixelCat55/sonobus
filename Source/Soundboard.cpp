@@ -196,7 +196,7 @@ SoundSample SoundSample::deserialize(const ValueTree tree)
 }
 
 Soundboard::Soundboard(String newName)
-        : name(std::move(newName)), samples(std::vector<SoundSample>())
+        : name(std::move(newName)), samples(std::deque<SoundSample>())
 {}
 
 String Soundboard::getName() const

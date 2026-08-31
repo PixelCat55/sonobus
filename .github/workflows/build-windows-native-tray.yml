@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: sonobus-windows-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-windows-x64:
     name: Windows x64 Release

@@ -282,18 +282,18 @@ struct SonobusAudioProcessor::RemotePeer {
     std::unique_ptr<MTDM> latencyProcessor;
     std::unique_ptr<LatencyMeasurer> latencyMeasurer;
 
-    float gain = 1.0f;
+    Atomic<float> gain { 1.0f };
 
     float buffertimeMs = 0.0f;
     float padBufferTimeMs = 0.0f;
     AutoNetBufferMode  autosizeBufferMode = AutoNetBufferModeAutoFull;
-    bool sendActive = false;
-    bool recvActive = false;
-    bool sendAllow = true;
-    bool recvAllow = true;
-    bool recvAllowCache = false; // used for recvmute all state
-    bool sendAllowCache = false; // used for sendmute all state
-    bool soloed = false;
+    Atomic<bool> sendActive { false };
+    Atomic<bool> recvActive { false };
+    Atomic<bool> sendAllow { true };
+    Atomic<bool> recvAllow { true };
+    Atomic<bool> recvAllowCache { false }; // used for recvmute all state
+    Atomic<bool> sendAllowCache { false }; // used for sendmute all state
+    Atomic<bool> soloed { false };
     bool invitedPeer = false;
     int  formatIndex = -1; // default
     AudioCodecFormatInfo recvFormat;
@@ -307,7 +307,7 @@ struct SonobusAudioProcessor::RemotePeer {
     float recvStereoPan[MAX_PANNERS]; // only use 2
     // runtime state
     float _lastgain = 0.0f;
-    bool connected = false;
+    Atomic<bool> connected { false };
     String userName;
     String groupName;
     int64_t dataPacketsReceived = 0;
@@ -2301,7 +2301,7 @@ void SonobusAudioProcessor::doReceiveData()
                         // this is a compact data message, try them all
                         if (remote->oursink->handle_message(buf, nbytes, endpoint, endpoint_send)) {
                             remote->dataPacketsReceived += 1;
-                            if (remote->recvAllow && !remote->recvActive) {
+                            if (remote->recvAllow.get() && ! remote->recvActive.get()) {
                                 remote->recvActive = true;
                             }
                             if (remote->resetSafetyMuted) {
@@ -2314,7 +2314,7 @@ void SonobusAudioProcessor::doReceiveData()
                     if (id == AOO_ID_WILDCARD || (remote->oursink->get_id(dummyid) && id == dummyid) ) {
                         if (remote->oursink->handle_message(buf, nbytes, endpoint, endpoint_send)) {
                             remote->dataPacketsReceived += 1;
-                            if (remote->recvAllow && !remote->recvActive) {
+                            if (remote->recvAllow.get() && ! remote->recvActive.get()) {
                                 remote->recvActive = true;
                             }
                             if (remote->resetSafetyMuted) {
@@ -3525,7 +3525,7 @@ int32_t SonobusAudioProcessor::handleSourceEvents(const aoo_event ** events, int
                     peer->oursource->add_sink(es, peer->remoteSinkId, endpoint_send);
                     peer->oursource->set_sinkoption(es, peer->remoteSinkId, aoo_opt_protocol_flags, &e->flags, sizeof(int32_t));
 
-                    if (peer->sendAllow) {
+                    if (peer->sendAllow.get()) {
                         peer->oursource->start();
                         peer->sendActive = true;
                     } else {
@@ -3558,7 +3558,7 @@ int32_t SonobusAudioProcessor::handleSourceEvents(const aoo_event ** events, int
                         peer->oursource->add_sink(es, peer->remoteSinkId, endpoint_send);
                         peer->oursource->set_sinkoption(es, peer->remoteSinkId, aoo_opt_protocol_flags, &e->flags, sizeof(int32_t));
                         
-                        if (peer->sendAllow) {
+                        if (peer->sendAllow.get()) {
                             peer->oursource->start();
                             
                             peer->sendActive = true;
@@ -3625,7 +3625,7 @@ int32_t SonobusAudioProcessor::handleSourceEvents(const aoo_event ** events, int
                         peer->sendActive = false;
                         peer->dataPacketsSent = 0;
 
-                        if (!peer->recvActive) {
+                        if (! peer->recvActive.get()) {
                             peer->connected = false;
                         }
                     }
@@ -3724,7 +3724,7 @@ int32_t SonobusAudioProcessor::handleSinkEvents(const aoo_event ** events, int32
                     
                     peer->oursink->uninvite_source(es, 0, endpoint_send); // get rid of existing bogus one
 
-                    if (peer->recvAllow) {
+                    if (peer->recvAllow.get()) {
                         peer->oursink->invite_source(es, peer->remoteSourceId, endpoint_send);
                         //peer->recvActive = true;
                     } else {
@@ -3875,8 +3875,8 @@ int32_t SonobusAudioProcessor::handleSinkEvents(const aoo_event ** events, int32
 
             RemotePeer * peer = findRemotePeer(es, sinkId);
             if (peer) {
-                peer->recvActive = peer->recvAllow && e->state > 0;
-                if (!peer->recvActive && !peer->sendActive) {
+                peer->recvActive = peer->recvAllow.get() && e->state > 0;
+                if (! peer->recvActive.get() && ! peer->sendActive.get()) {
                     peer->connected = false;
                 } else {
                     peer->connected = true;                    
@@ -4630,7 +4630,7 @@ bool SonobusAudioProcessor::removeAllRemotePeers()
         
         commitCacheForPeer(remote);
 
-        if (remote->connected) {
+        if (remote->connected.get()) {
             disconnectRemotePeer(index);
         }
 
@@ -4668,7 +4668,7 @@ bool SonobusAudioProcessor::removeRemotePeer(int index, bool sendblock)
 
             commitCacheForPeer(remote);
             
-            if (remote->connected) {
+            if (remote->connected.get()) {
                 disconnectRemotePeer(index);
             }
                         
@@ -4714,7 +4714,7 @@ float SonobusAudioProcessor::getRemotePeerLevelGain(int index) const
     const ScopedReadLock sl (mCoreLock);
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
-        levelgain = remote->gain;
+        levelgain = remote->gain.get();
     }
     return levelgain;
 }
@@ -5410,7 +5410,7 @@ bool SonobusAudioProcessor::getRemotePeerRecvActive(int index) const
     const ScopedReadLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
-        return remote->recvActive;
+        return remote->recvActive.get();
     }
     return false;        
 }
@@ -5439,7 +5439,7 @@ bool SonobusAudioProcessor::getRemotePeerSendAllow(int index, bool cached) const
     const ScopedReadLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
-        return cached ? remote->sendAllowCache : remote->sendAllow;
+        return cached ? remote->sendAllowCache.get() : remote->sendAllow.get();
     }
     return false;        
 }
@@ -5468,7 +5468,7 @@ bool SonobusAudioProcessor::getRemotePeerRecvAllow(int index, bool cached) const
     const ScopedReadLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
-        return cached ? remote->recvAllowCache : remote->recvAllow;
+        return cached ? remote->recvAllowCache.get() : remote->recvAllow.get();
     }
     return false;        
 }
@@ -5485,7 +5485,7 @@ void SonobusAudioProcessor::setRemotePeerSoloed(int index, bool soloed)
     bool anysoloed = mMainMonitorSolo.get();
     for (auto & remote : mRemotePeers) 
     {
-        if (remote->soloed) {
+        if (remote->soloed.get()) {
             anysoloed = true;
             break;
         }
@@ -5498,7 +5498,7 @@ bool SonobusAudioProcessor::getRemotePeerSoloed(int index) const
     const ScopedReadLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
-        return  remote->soloed;
+        return remote->soloed.get();
     }
     return false;            
 }
@@ -5837,7 +5837,7 @@ bool SonobusAudioProcessor::getRemotePeerSendActive(int index) const
     const ScopedReadLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
-        return remote->sendActive;
+        return remote->sendActive.get();
     }
     return false;        
 }
@@ -5856,7 +5856,7 @@ bool SonobusAudioProcessor::getRemotePeerConnected(int index) const
     const ScopedReadLock sl (mCoreLock);        
     if (index >= 0 && index < mRemotePeers.size()) {
         RemotePeer * remote = mRemotePeers.getUnchecked(index);
-        return remote->connected;
+        return remote->connected.get();
     }
     return false;        
 }
@@ -6149,7 +6149,7 @@ void SonobusAudioProcessor::commitCacheForPeer(RemotePeer * retpeer)
     newcache.name = retpeer->userName;
     newcache.sendFormat = retpeer->formatIndex;
     newcache.numChanGroups = retpeer->numChanGroups;
-    newcache.mainGain = retpeer->gain;
+    newcache.mainGain = retpeer->gain.get();
     newcache.numMultiChanGroups = retpeer->lastMultiNumChanGroups;
     newcache.modifiedChanGroups = retpeer->modifiedMultiChanGroups;
     newcache.orderPriority = retpeer->orderPriority;
@@ -6243,7 +6243,7 @@ bool SonobusAudioProcessor::removeAllRemotePeersWithEndpoint(EndpointState * end
         auto * s = mRemotePeers.getUnchecked(i);
         if (s->endpoint == endpoint) {
             
-            if (s->connected) {
+            if (s->connected.get()) {
                 disconnectRemotePeer(i);
             }
             
@@ -7804,7 +7804,7 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         
         for (auto & remote : mRemotePeers) 
         {
-            if (remote->soloed) {
+            if (remote->soloed.get()) {
                 anysoloed = true;
                 break;
             }
@@ -7870,7 +7870,7 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             }
 
             // write out per-user output bus
-            if (remote->recvActive && remote->recvChannels > 0) {
+            if (remote->recvActive.get() && remote->recvChannels > 0) {
                 if (auto userbus = getBus(false, OutUserBaseBusIndex + rindex)) {
                     if (userbus->isEnabled()) {
                         int index = getChannelIndexInProcessBlockBuffer(false, OutUserBaseBusIndex + rindex, 0);
@@ -7891,13 +7891,13 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             
             // apply effects
 
-            float usegain = remote->gain;
+            float usegain = remote->gain.get();
             bool wasSilent = false;
 
             bool forceSilent = false;
 
             // we get the stuff, but ignore it (either muted or others soloed)
-            if (!remote->recvActive || (anysoloed && !remote->soloed) || remote->resetSafetyMuted) {
+            if (! remote->recvActive.get() || (anysoloed && ! remote->soloed.get()) || remote->resetSafetyMuted) {
 
                 usegain = 0.0f;
                 forceSilent = true;

@@ -1,6 +1,6 @@
-# Windows Fork Features
+# Windows QoL and Bug Fixes Features
 
-This document describes the Windows-only quality-of-life features added by the unofficial `PixelCat55/sonobus` fork.
+This document describes the Windows QoL features and fork-specific bug-fix behavior maintained by the unofficial `PixelCat55/sonobus` fork.
 
 These additions are **not part of upstream SonoBus unless separately adopted there**. The original SonoBus project remains at `sonosaurus/sonobus`.
 

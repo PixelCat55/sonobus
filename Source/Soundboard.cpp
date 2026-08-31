@@ -209,7 +209,7 @@ void Soundboard::setName(String newName)
     this->name = std::move(newName);
 }
 
-std::vector<SoundSample>& Soundboard::getSamples()
+std::deque<SoundSample>& Soundboard::getSamples()
 {
     return this->samples;
 }

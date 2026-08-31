@@ -720,13 +720,17 @@ void SoundboardView::clickedAddSoundboard()
 
 void SoundboardView::clickedRenameSoundboard()
 {
+    const auto selectedIndex = mBoardSelectComboBox->getSelectedItemIndex();
+    if (selectedIndex < 0 || selectedIndex >= processor->getNumberOfSoundboards())
+        return;
+
     auto callback = [this](const String& name) {
         int selectedSoundboardIndex = mBoardSelectComboBox->getSelectedItemIndex();
         processor->renameSoundboard(selectedSoundboardIndex, name);
         updateSoundboardSelector();
     };
 
-    auto& currentSoundboard = processor->getSoundboard(mBoardSelectComboBox->getSelectedItemIndex());
+    auto& currentSoundboard = processor->getSoundboard(selectedIndex);
     auto content = std::make_unique<SoundboardEditView>(callback, &currentSoundboard);
     content->setSize(SoundboardEditView::DEFAULT_VIEW_WIDTH, SoundboardEditView::DEFAULT_VIEW_HEIGHT);
 
@@ -744,7 +748,10 @@ void SoundboardView::clickedRenameSoundboard()
 
 void SoundboardView::clickedDuplicateSoundboard()
 {
-    auto currindex = mBoardSelectComboBox->getSelectedItemIndex();
+    const auto currindex = mBoardSelectComboBox->getSelectedItemIndex();
+    if (currindex < 0 || currindex >= processor->getNumberOfSoundboards())
+        return;
+
     auto& currentSoundboard = processor->getSoundboard(currindex);
 
     auto callback = [this, currindex](const String& name) {

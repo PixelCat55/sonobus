@@ -855,9 +855,13 @@ void ConnectView::publicGroupLogin()
 
         if (!processor.isConnectedToServer()) {
 
-            Timer::callAfterDelay(100, [this,info] {
-                connectWithInfo(info, true);
-                updatePublicGroups();
+            Component::SafePointer<ConnectView> safeThis (this);
+            Timer::callAfterDelay (100, [safeThis, info]() mutable {
+                if (safeThis == nullptr)
+                    return;
+
+                safeThis->connectWithInfo (info, true);
+                safeThis->updatePublicGroups();
             });
         }
     }
@@ -1261,11 +1265,18 @@ void ConnectView::connectWithInfo(const AooServerConnectionInfo & info, bool all
     {
         processor.disconnectFromServer();
 
-        Timer::callAfterDelay(100, [this] {
-            processor.connectToServer(currConnectionInfo.serverHost, currConnectionInfo.serverPort, currConnectionInfo.userName, currConnectionInfo.userPassword);
-           // updateState();
-            listeners.call(&ConnectView::Listener::connectionsChanged, this);
+        const auto reconnectInfo = currConnectionInfo;
+        Component::SafePointer<ConnectView> safeThis (this);
+        Timer::callAfterDelay (100, [safeThis, reconnectInfo]() mutable {
+            if (safeThis == nullptr)
+                return;
 
+            safeThis->processor.connectToServer (reconnectInfo.serverHost,
+                                                 reconnectInfo.serverPort,
+                                                 reconnectInfo.userName,
+                                                 reconnectInfo.userPassword);
+            // updateState();
+            safeThis->listeners.call (&ConnectView::Listener::connectionsChanged, safeThis.getComponent());
         });
 
         mServerHostEditor->setColour(TextEditor::backgroundColourId, Colour(0xff050505));

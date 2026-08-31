@@ -52,7 +52,6 @@ void SoundboardProcessor::deleteSoundboard(int index)
     if (index < 0 || index >= static_cast<int>(soundboards.size()))
         return;
 
-    auto& activeSamples = channelProcessor->getActiveSamples();
     std::vector<juce::URL> urls;
     
     for (const auto& samplePtr : soundboards[index].getSamples()) {

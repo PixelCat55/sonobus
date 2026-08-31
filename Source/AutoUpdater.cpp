@@ -64,9 +64,9 @@ void LatestVersionCheckerAndUpdater::run()
         if (showAlertWindows)
             AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
                                               "Update Server Communication Error",
-                                              "Failed to communicate with the SonoBus update server.\n"
+                                              "Failed to communicate with the QoL and Bug Fixes fork update source.\n"
                                               "Please try again in a few minutes.\n\n"
-                                              "If this problem persists you can download the latest version of SonoBus from sonobus.net");
+                                              "If this problem persists, check the PixelCat55/sonobus GitHub Releases page");
 
         return;
     }

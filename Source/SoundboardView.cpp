@@ -333,9 +333,15 @@ void SoundboardView::refreshButtons()
     auto& selectedBoard = processor->getSoundboard(selectedBoardIndex);
 
     int i=0;
-    for (auto& sample : selectedBoard.getSamples()) {
+    for (auto& samplePtr : selectedBoard.getSamples()) {
+        if (samplePtr == nullptr) {
+            ++i;
+            continue;
+        }
+
+        auto& sample = *samplePtr;
         if (i < mSoundButtons.size()) {
-            auto & sbutton = mSoundButtons[i];
+            auto& sbutton = mSoundButtons[i];
 
             auto playbackManagerMaybe = processor->getChannelProcessor()->findPlaybackManager(sample);
             if (playbackManagerMaybe.has_value()) {
@@ -370,7 +376,11 @@ void SoundboardView::rebuildButtons()
 
     auto& selectedBoard = processor->getSoundboard(selectedBoardIndex);
 
-    for (auto& sample : selectedBoard.getSamples()) {
+    for (auto& samplePtr : selectedBoard.getSamples()) {
+        if (samplePtr == nullptr)
+            continue;
+
+        auto& sample = *samplePtr;
         auto playbackButton = std::make_unique<SonoPlaybackProgressButton>(sample.getName(), sample.getName());
         auto buttonAddress = playbackButton.get();
 
@@ -633,7 +643,11 @@ bool SoundboardView::triggerSampleAtIndex(int sampleIndex)
         return false;
     }
 
-    auto& sample = samples[sampleIndex];
+    auto* samplePtr = samples[static_cast<size_t>(sampleIndex)].get();
+    if (samplePtr == nullptr || sampleIndex >= mSoundButtons.size())
+        return false;
+
+    auto& sample = *samplePtr;
     auto& buttonAtIndex = mSoundButtons[sampleIndex];
 
     if (sample.getButtonBehaviour() == SoundSample::ButtonBehaviour::TOGGLE
@@ -890,10 +904,13 @@ void SoundboardView::applyOptionsToAll(SoundSample & fromsample)
     auto& soundboard = getSoundboardProcessor()->getSoundboard(selectedSoundboardIndex);
     auto& samples = soundboard.getSamples();
 
-    auto sampleCount = samples.size();
-    bool gotone = false;
+    const auto sampleCount = static_cast<int>(samples.size());
     for (int i = 0; i < sampleCount; ++i) {
-        auto& sample = samples[i];
+        auto* samplePtr = samples[static_cast<size_t>(i)].get();
+        if (samplePtr == nullptr)
+            continue;
+
+        auto& sample = *samplePtr;
         if (&fromsample != &sample) {
             sample.setReplayBehaviour(fromsample.getReplayBehaviour());
             sample.setPlaybackBehaviour(fromsample.getPlaybackBehaviour());
@@ -968,10 +985,14 @@ bool SoundboardView::processKeystroke(const KeyPress& keyPress)
     auto& soundboard = getSoundboardProcessor()->getSoundboard(selectedSoundboardIndex);
     auto& samples = soundboard.getSamples();
 
-    auto sampleCount = samples.size();
+    const auto sampleCount = static_cast<int>(samples.size());
     bool gotone = false;
     for (int i = 0; i < sampleCount; ++i) {
-        auto& sample = samples[i];
+        auto* samplePtr = samples[static_cast<size_t>(i)].get();
+        if (samplePtr == nullptr)
+            continue;
+
+        auto& sample = *samplePtr;
         if (!keyPress.getModifiers().isAnyModifierKeyDown() && sample.getHotkeyCode() == keyPress.getKeyCode()) {
             triggerSampleAtIndex(i);
             gotone = true;

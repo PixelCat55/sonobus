@@ -802,7 +802,11 @@ public:
 
     void resumed() override
     {
-        Desktop::getInstance().setScreenSaverEnabled(false);
+#if JUCE_WINDOWS
+        Desktop::getInstance().setScreenSaverEnabled (mainWindow == nullptr || ! mainWindow->isVisible());
+#else
+        Desktop::getInstance().setScreenSaverEnabled (false);
+#endif
         
 #if JUCE_STANDALONE_FILTER_WINDOW_USE_KIOSK_MODE
         Desktop::getInstance().setKioskModeComponent (nullptr, false);

@@ -469,7 +469,14 @@ public:
 #endif
                 mainWindow->setVisible (true);
 
-            Desktop::getInstance().setScreenSaverEnabled(false);
+#if JUCE_WINDOWS
+            // A tray-hidden background instance should not keep Windows awake.
+            // Restore SonoBus's normal screen-saver suppression only while its
+            // main window is visible.
+            Desktop::getInstance().setScreenSaverEnabled (startMinimizedToTray);
+#else
+            Desktop::getInstance().setScreenSaverEnabled (false);
+#endif
 
 
             if (auto * sonoproc = dynamic_cast<SonobusAudioProcessor*>(mainWindow->pluginHolder->processor.get())) {

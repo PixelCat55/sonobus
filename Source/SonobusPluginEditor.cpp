@@ -1961,7 +1961,9 @@ void SonobusAudioProcessorEditor::timerCallback(int timerid)
 #endif
     }
     else if (timerid == CheckForNewVersionTimerId) {
-        if (getShouldCheckForNewVersionValue) {
+        // A tray-hidden background launch should stay quiet and lightweight.
+        // Manual update checks remain available from the application menu.
+        if (isShowing() && getShouldCheckForNewVersionValue) {
             Value * val = getShouldCheckForNewVersionValue();
             if (val && (bool)val->getValue()) {
                 DBG("Checking for new version");

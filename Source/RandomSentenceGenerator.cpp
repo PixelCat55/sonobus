@@ -182,8 +182,8 @@ void RandomSentenceGenerator::printGrammar()
 string RandomSentenceGenerator::toLwer(string s)
 {
   locale loc;
-  for (int i = 0; i < s.length(); ++i){
-    tolower(s[i], loc);
+  for (size_t i = 0; i < s.length(); ++i) {
+    s[i] = static_cast<char>(tolower(s[i], loc));
   }
   return s;
 }

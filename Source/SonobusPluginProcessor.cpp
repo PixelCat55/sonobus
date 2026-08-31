@@ -7104,8 +7104,12 @@ void SonobusAudioProcessor::setupSourceFormatsForAll()
 
     int i=0;
     for (auto s : mRemotePeers) {
-        if (s->workBuffer.getNumSamples() < currSamplesPerBlock) {
-            s->workBuffer.setSize(jmax(2, s->recvChannels), currSamplesPerBlock, false, false, true);
+        const int requiredWorkChannels = jmax (2, jmax (outchannels, s->recvChannels));
+        if (s->workBuffer.getNumSamples() < currSamplesPerBlock
+            || s->workBuffer.getNumChannels() < requiredWorkChannels) {
+            // Allocate/reconfigure outside processBlock so normal real-time
+            // processing does not need to grow this buffer.
+            s->workBuffer.setSize (requiredWorkChannels, currSamplesPerBlock, false, false, true);
         }
 
         s->sendChannels = isAnythingRoutedToPeer(i) ? outchannels : s->nominalSendChannels <= 0 ? inchannels : s->nominalSendChannels;

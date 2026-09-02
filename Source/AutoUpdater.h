@@ -33,4 +33,6 @@ private:
 
     std::unique_ptr<DownloadAndInstallThread> installer;
     std::unique_ptr<Component> dialogWindow;
+
+    JUCE_DECLARE_WEAK_REFERENCEABLE (LatestVersionCheckerAndUpdater)
 };

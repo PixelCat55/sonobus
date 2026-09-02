@@ -1226,8 +1226,10 @@ private:
 
                 // call resized again if on iOS, due to dumb stuff related to safe area insets not being updated
 #if JUCE_IOS
-                Timer::callAfterDelay(150, [this]() { 
-                    this->resized();             
+                Component::SafePointer<StandaloneFilterWindow> safeThis (this);
+                Timer::callAfterDelay(150, [safeThis]() mutable {
+                    if (safeThis != nullptr)
+                        safeThis->resized();
                 });
 #endif
             }

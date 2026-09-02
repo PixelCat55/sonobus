@@ -1518,7 +1518,7 @@ void ConnectView::paint(Graphics & g)
 }
 
 
-#pragma RecentsListModel
+// RecentsListModel
 
 
 ConnectView::RecentsListModel::RecentsListModel(ConnectView * parent_) : parent(parent_)
@@ -1649,7 +1649,7 @@ void ConnectView::RecentsListModel::returnKeyPressed (int rowNumber)
     }
 }
 
-#pragma PublicGroupsListModel
+// PublicGroupsListModel
 
 ConnectView::PublicGroupsListModel::PublicGroupsListModel(ConnectView * parent_) : parent(parent_)
 {

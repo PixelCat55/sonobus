@@ -97,6 +97,7 @@ void SamplePlaybackManager::detachFromSample()
         sample->setLastPlaybackPosition(transportSource.getCurrentPosition());
 
     sample = nullptr;
+    listeners.clear();
 }
 
 void SamplePlaybackManager::unload()
@@ -155,7 +156,7 @@ double SamplePlaybackManager::getLength() const
 void SamplePlaybackManager::notifyPlaybackPosition(bool force)
 {
     auto nowpos = transportSource.getCurrentPosition();
-    if (fabs(lastPlaybackPos - nowpos) > 0.0001) {
+    if (force || fabs(lastPlaybackPos - nowpos) > 0.0001) {
         listeners.call (&PlaybackPositionListener::onPlaybackPositionChanged, this);
         lastPlaybackPos = nowpos;
     }
@@ -173,6 +174,8 @@ void SamplePlaybackManager::timerCallback()
 
 void SamplePlaybackManager::changeListenerCallback(ChangeBroadcaster* source)
 {
+    ignoreUnused(source);
+
     if (sample == nullptr)
         return;
 
@@ -310,9 +313,11 @@ void SoundboardChannelProcessor::setDestStartAndCount(int start, int count)
 void SoundboardChannelProcessor::setChannelGroupParams(const SonoAudio::ChannelGroupParams & other)
 {
     channelGroup.params = other;
+    channelGroup.params.numChannels = getFileSourceNumberOfChannels();
     channelGroup.commitAllParams();
     
     recordChannelGroup.params = other;
+    recordChannelGroup.params.numChannels = getFileSourceNumberOfChannels();
     recordChannelGroup.commitAllParams();
 }
 
@@ -362,6 +367,8 @@ void SoundboardChannelProcessor::prepareToPlay(const int sampleRate, const int m
     const int numChannels = getFileSourceNumberOfChannels();
 
     meterSource.resize(numChannels, meterRmsWindow);
+    channelGroup.params.numChannels = numChannels;
+    recordChannelGroup.params.numChannels = numChannels;
     channelGroup.init(sampleRate);
     recordChannelGroup.init(sampleRate);
 }
@@ -399,12 +406,6 @@ bool SoundboardChannelProcessor::processAudioBlock(int numSamples)
     }
 
     meterSource.measureBlock(buffer);
-
-    int sourceChannels = getFileSourceNumberOfChannels();
-    channelGroup.params.numChannels = sourceChannels;
-    channelGroup.commitMonitorDelayParams();
-    recordChannelGroup.params.numChannels = sourceChannels;
-    recordChannelGroup.commitMonitorDelayParams();
 
     return true;
 }

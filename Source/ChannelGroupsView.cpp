@@ -423,7 +423,7 @@ void ChannelGroupEffectsView::effectsHeaderClicked(EffectsBaseView *comp)
 }
 
 
-#pragma ChannelGroupMonitorEffectsView
+// ChannelGroupMonitorEffectsView
 
 ChannelGroupMonitorEffectsView::ChannelGroupMonitorEffectsView(SonobusAudioProcessor& proc, bool peermode)
 : Component(), peerMode(peermode), processor(proc)
@@ -735,7 +735,7 @@ void ChannelGroupMonitorEffectsView::effectsHeaderClicked(EffectsBaseView *comp)
     }
 }
 
-#pragma ChannelGroupReverbEffectsView
+// ChannelGroupReverbEffectsView
 
 ChannelGroupReverbEffectsView::ChannelGroupReverbEffectsView(SonobusAudioProcessor& proc)
 : Component(), processor(proc)
@@ -839,7 +839,7 @@ void ChannelGroupReverbEffectsView::effectsHeaderClicked(EffectsBaseView *comp)
 }
 
 
-#pragma ChannelGroupView
+// ChannelGroupView
 
 
 ChannelGroupView::ChannelGroupView() : smallLnf(12), medLnf(14), sonoSliderLNF(12), panSliderLNF(12)
@@ -1031,17 +1031,17 @@ void ChannelGroupsView::configLevelSlider(Slider * slider, bool monmode)
 
     if (mPeerMode) {
         if (monmode) {
-            slider->textFromValueFunction = [](float v) -> String { return String(TRANS("Level: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
+            slider->textFromValueFunction = [](double v) -> String { return String(TRANS("Level: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
         }
         else {
-            slider->textFromValueFunction = [](float v) -> String { return String(TRANS("Level: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
+            slider->textFromValueFunction = [](double v) -> String { return String(TRANS("Level: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
         }
     } else {
         if (monmode) {
-            slider->textFromValueFunction = [](float v) -> String { return String(TRANS("Monitor: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
+            slider->textFromValueFunction = [](double v) -> String { return String(TRANS("Monitor: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
         }
         else {
-            slider->textFromValueFunction = [](float v) -> String { return String(TRANS("Pre Level: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
+            slider->textFromValueFunction = [](double v) -> String { return String(TRANS("Pre Level: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
         }
     }
 

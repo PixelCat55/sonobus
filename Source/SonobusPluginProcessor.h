@@ -1268,6 +1268,7 @@ private:
     AudioProcessorValueTreeState mState;
     UndoManager                  mUndoManager;
 
+    JUCE_DECLARE_WEAK_REFERENCEABLE (SonobusAudioProcessor)
 };
 
 

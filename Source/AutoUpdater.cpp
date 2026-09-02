@@ -102,10 +102,12 @@ void LatestVersionCheckerAndUpdater::run()
         {
             auto versionString = info->versionString;
             auto releaseNotes  = info->releaseNotes;
+            WeakReference<LatestVersionCheckerAndUpdater> safeThis (this);
 
-            MessageManager::callAsync ([this, versionString, releaseNotes, asset]
+            MessageManager::callAsync ([safeThis, versionString, releaseNotes, asset]
             {
-                askUserAboutNewVersion (versionString, releaseNotes, asset);
+                if (safeThis != nullptr)
+                    safeThis->askUserAboutNewVersion (versionString, releaseNotes, asset);
             });
 
             return;

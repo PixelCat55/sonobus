@@ -216,7 +216,7 @@ void SampleEditView::createVolumeInputs()
     mVolumeSlider->setMouseDragSensitivity(256);
     mVolumeSlider->setTextBoxStyle(Slider::TextBoxRight, false, 60, 32);
     mVolumeSlider->valueFromTextFunction = [](const String& s) -> float { return Decibels::decibelsToGain(s.getFloatValue()); };
-    mVolumeSlider->textFromValueFunction = [](float v) -> String { return Decibels::toString(Decibels::gainToDecibels(v), 1); };
+    mVolumeSlider->textFromValueFunction = [](double v) -> String { return Decibels::toString(Decibels::gainToDecibels(v), 1); };
     mVolumeSlider->setValue(initialGain);
     mVolumeSlider->setChangeNotificationOnlyOnRelease(false);
     mVolumeSlider->onValueChange = [this]() {
@@ -655,4 +655,3 @@ void SampleEditView::resized()
     contentBox.performLayout(getLocalBounds().reduced(2));
 
 }
-

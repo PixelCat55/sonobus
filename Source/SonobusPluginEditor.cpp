@@ -1113,7 +1113,7 @@ SonobusAudioProcessorEditor::SonobusAudioProcessorEditor (SonobusAudioProcessor&
         mPlaybackSlider->setTextBoxStyle(Slider::NoTextBox, true, 60, 14);
         mPlaybackSlider->setPopupDisplayEnabled(true, true, this);
         mPlaybackSlider->valueFromTextFunction = [](const String& s) -> float { return Decibels::decibelsToGain(s.getFloatValue()); };
-        mPlaybackSlider->textFromValueFunction = [](float v) -> String { return Decibels::toString(Decibels::gainToDecibels(v), 1); };
+        mPlaybackSlider->textFromValueFunction = [](double v) -> String { return Decibels::toString(Decibels::gainToDecibels(v), 1); };
         mPlaybackSlider->onValueChange = [this] { processor.setFilePlaybackGain(mPlaybackSlider->getValue()); };
         mPlaybackSlider->setWantsKeyboardFocus(true);
 
@@ -5403,7 +5403,7 @@ bool SonobusAudioProcessorEditor::setupLocalisation(const String & overrideLang)
 }
 
 
-#pragma mark - ApplicationCommandTarget
+// ApplicationCommandTarget
 
 enum
 {
@@ -5950,7 +5950,7 @@ void SonobusAudioProcessorEditor::populateRecentSetupsMenu(PopupMenu & popup)
 
 
 
-#pragma MenuBarModel
+// MenuBarModel
 
 
 
@@ -6051,4 +6051,3 @@ void SonobusAudioProcessorEditor::SonobusMenuBarModel::menuItemSelected (int men
     }
 #endif
 }
-

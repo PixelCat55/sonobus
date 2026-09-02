@@ -206,7 +206,7 @@ void SoundboardView::createControlPanel()
     mVolumeSlider->setWantsKeyboardFocus(true);
     mVolumeSlider->setMouseDragSensitivity(90);
     mVolumeSlider->valueFromTextFunction = [](const String& s) -> float { return Decibels::decibelsToGain(s.getFloatValue()); };
-    mVolumeSlider->textFromValueFunction = [](float v) -> String { return String(TRANS("Level: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
+    mVolumeSlider->textFromValueFunction = [](double v) -> String { return String(TRANS("Level: ")) + Decibels::toString(Decibels::gainToDecibels(v), 1); };
     mVolumeSlider->setLookAndFeel(&volSliderLNF);
     mVolumeSlider->setTextBoxStyle(Slider::NoTextBox, true, 60, 14);
     mVolumeSlider->setValue(audioProcessor.getSoundboardProcessor()->getGain());
@@ -819,10 +819,12 @@ void SoundboardView::clickedDeleteSoundboard()
 void SoundboardView::clickedAddSoundSample()
 {
     SoundSample* createdSample = processor->addSoundSample("", "");
+    if (createdSample == nullptr)
+        return;
 
     rebuildButtons();
-    auto * button = mSoundButtons.back().get();
-    if (button) {
+    if (! mSoundButtons.empty()) {
+        auto* button = mSoundButtons.back().get();
         clickedEditSoundSample(*button, *createdSample);
     }
 }
@@ -957,7 +959,9 @@ void SoundboardView::resized()
     // Compute the inner container size manually, as all automatic layout computation seem to be rendered useless
     // as a consequence of using viewport.
     int buttonsHeight = std::accumulate(buttonBox.items.begin(), buttonBox.items.end(), 0,
-        [](int sum, const FlexItem& item) { return sum + item.minHeight + item.margin.top + item.margin.bottom; });
+        [](int sum, const FlexItem& item) {
+            return sum + roundToInt(item.minHeight + item.margin.top + item.margin.bottom);
+        });
     buttonContainer.setSize(buttonViewport.getMaximumVisibleWidth()-4, buttonsHeight);
 
     mainBox.performLayout(getLocalBounds().reduced(2));
@@ -1094,7 +1098,7 @@ void SoundboardView::filesDropped(const StringArray& files, int x, int y)
 {
     fileDragStopped();
 
-    SoundSample* createdSample;
+    SoundSample* createdSample = nullptr;
     for (const auto& filePath : files) {
         auto sampleName = File(filePath).getFileNameWithoutExtension();
         createdSample = processor->addSoundSample(sampleName, filePath);
@@ -1103,8 +1107,8 @@ void SoundboardView::filesDropped(const StringArray& files, int x, int y)
     rebuildButtons();
 
     // Open the edit view by default if only 1 file was dragged
-    if (files.size() == 1) {
-        clickedEditSoundSample(*mSoundButtons[mSoundButtons.size() - 1].get(), *createdSample);
+    if (files.size() == 1 && createdSample != nullptr && ! mSoundButtons.empty()) {
+        clickedEditSoundSample(*mSoundButtons.back(), *createdSample);
     }
 }
 
@@ -1176,4 +1180,3 @@ void HoldSampleButtonMouseListener::mouseUp(const MouseEvent& event)
         button->setPositionDragging(posDragging);
     }
 }
-

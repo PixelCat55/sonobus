@@ -4332,8 +4332,10 @@ int32_t SonobusAudioProcessor::handleClientEvents(const aoo_event ** events, int
                         clientListeners.call(&SonobusAudioProcessor::ClientListener::aooClientPeerJoinBlocked, this, CharPointer_UTF8 (e->group), CharPointer_UTF8 (e->user), endpoint->ipaddr, endpoint->port);
 
                         // after a short delay
-                        Timer::callAfterDelay(400, [this, endpoint] {
-                            sendBlockedInfoMessage(endpoint, true);
+                        WeakReference<SonobusAudioProcessor> safeThis (this);
+                        Timer::callAfterDelay(400, [safeThis, endpoint] {
+                            if (safeThis != nullptr)
+                                safeThis->sendBlockedInfoMessage(endpoint, true);
                         });
                     }
                     else {
@@ -9660,7 +9662,7 @@ bool SonobusAudioProcessor::loadURLIntoTransport (const URL& audioURL)
 }
 
 
-#pragma Effects
+// Effects
 
 void SonobusAudioProcessor::setMainReverbEnabled(bool flag)
 {    

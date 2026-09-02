@@ -18,6 +18,23 @@ SoundboardProcessor::SoundboardProcessor(SoundboardChannelProcessor* channelProc
 SoundboardProcessor::~SoundboardProcessor()
 {
     saveToDisk();
+
+    if (channelProcessor == nullptr)
+        return;
+
+    // Playback managers outlive this view/controller. Detach their listeners
+    // and sample pointers before the heap-owned samples are destroyed.
+    for (auto& soundboard : soundboards) {
+        for (auto& sample : soundboard.getSamples()) {
+            if (sample == nullptr)
+                continue;
+
+            if (auto manager = channelProcessor->findPlaybackManager(*sample))
+                (*manager)->detach(this);
+
+            channelProcessor->removeSample(*sample);
+        }
+    }
 }
 
 Soundboard& SoundboardProcessor::addSoundboard(const String& name, const bool select)
@@ -26,7 +43,7 @@ Soundboard& SoundboardProcessor::addSoundboard(const String& name, const bool se
     soundboards.push_back(std::move(newSoundboard));
 
     if (select) {
-        selectedSoundboardIndex = getNumberOfSoundboards() - 1;
+        selectedSoundboardIndex = static_cast<int>(getNumberOfSoundboards()) - 1;
     }
 
     reorderSoundboards();
@@ -345,7 +362,7 @@ void SoundboardProcessor::readSoundboardsFromFile(const File& file)
         return;
 
     int selected = tree.getProperty(SELECTED_KEY);
-    selectedSoundboardIndex = selected >= 0 ? std::optional<size_t>(selected) : std::nullopt;
+    selectedSoundboardIndex = selected >= 0 ? std::optional<int>(selected) : std::nullopt;
     hotkeysMuted = tree.getProperty(HOTKEYS_MUTED_KEY, hotkeysMuted);
     numericHotkeyAllowed = tree.getProperty(HOTKEYS_NUMERIC_KEY, numericHotkeyAllowed);
 

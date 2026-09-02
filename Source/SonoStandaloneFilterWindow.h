@@ -44,7 +44,7 @@
 namespace juce
 {
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
 class SonoBusSystemTrayIcon final : public SystemTrayIconComponent
 {
 public:
@@ -916,7 +916,7 @@ public:
         optionsButton.setTriggeredOnMouseDown (true);
         setUsingNativeTitleBar(true);
 
-       #if JUCE_WINDOWS
+       #if JUCE_WINDOWS || JUCE_LINUX
         systemTrayIcon = std::make_unique<SonoBusSystemTrayIcon>();
         systemTrayIcon->restoreRequested = [this]() { restoreFromSystemTray(); };
         systemTrayIcon->quitRequested = []()
@@ -1056,17 +1056,15 @@ public:
         JUCEApplicationBase::getInstance()->systemRequestedQuit();
     }
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
     void minimisationStateChanged (bool isNowMinimised) override
     {
         if (! isNowMinimised || hideToTrayPending)
             return;
 
-        // The Windows minimise notification arrives while the native window is
-        // still completing its minimise transition. Hiding synchronously here
-        // races that transition and can leave a stale taskbar button or a window
-        // that refuses to minimise a second time. Queue the hide until the native
-        // minimise operation has completely returned.
+        // Native minimise notifications may arrive while the window manager is
+        // still completing its transition. Queue the hide until that operation
+        // has returned so the taskbar/panel entry is removed consistently.
         hideToTrayPending = true;
         Component::SafePointer<StandaloneFilterWindow> safeThis (this);
 
@@ -1147,7 +1145,7 @@ public:
     virtual StandalonePluginHolder* getPluginHolder()    { return pluginHolder.get(); }
 
     std::unique_ptr<StandalonePluginHolder> pluginHolder;
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
     std::unique_ptr<SonoBusSystemTrayIcon> systemTrayIcon;
     bool hideToTrayPending = false;
 #endif

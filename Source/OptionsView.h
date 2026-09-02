@@ -133,8 +133,8 @@ protected:
     std::unique_ptr<ToggleButton> mOptionsOverrideSamplerateButton;
     std::unique_ptr<ToggleButton> mOptionsShouldCheckForUpdateButton;
     std::unique_ptr<ToggleButton> mOptionsAutoReconnectButton;
-#if JUCE_WINDOWS
-    std::unique_ptr<ToggleButton> mOptionsStartWithWindowsButton;
+#if JUCE_WINDOWS || JUCE_LINUX
+    std::unique_ptr<ToggleButton> mOptionsStartWithSystemButton;
 #endif
     std::unique_ptr<ToggleButton> mOptionsSliderSnapToMouseButton;
     std::unique_ptr<ToggleButton> mOptionsAllowBluetoothInput;
@@ -182,8 +182,8 @@ protected:
     FlexBox optionsChangeAllQualBox;
     FlexBox optionsInputLimitBox;
     FlexBox optionsAutoReconnectBox;
-#if JUCE_WINDOWS
-    FlexBox optionsStartWithWindowsBox;
+#if JUCE_WINDOWS || JUCE_LINUX
+    FlexBox optionsStartWithSystemBox;
 #endif
     FlexBox optionsSnapToMouseBox;
     FlexBox optionsDisableShortcutsBox;

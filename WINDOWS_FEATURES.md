@@ -74,9 +74,9 @@ This updates Windows to use the new executable path.
 
 ## Scope
 
-These features are currently intended only for the **Windows standalone application**.
+This document covers the **Windows standalone application**. The Linux standalone implementation is documented separately in [`LINUX_FEATURES.md`](LINUX_FEATURES.md).
 
-They do not change the behavior of SonoBus plugin formats, macOS, Linux, iOS, or Android builds.
+Neither implementation changes SonoBus plugin formats, macOS, iOS, or Android builds.
 
 ## Implementation principles
 

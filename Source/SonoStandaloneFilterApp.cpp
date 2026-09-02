@@ -124,7 +124,7 @@ public:
     bool doInitialConnect = false;
     bool doImmediateQuit = false;
     bool doHeadless = false;
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
     bool startMinimizedToTray = false;
 #endif
     String loadSetupFilename;
@@ -314,7 +314,7 @@ public:
 
         const String headlessSpec("-q|--headless");
         const String headlessSpecDesc("-q|--headless");
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
         const String startMinimizedSpec("--start-minimized");
 #endif
 
@@ -361,9 +361,9 @@ public:
             TRANS("You'll need to use other command-line options to connect to a group... eventually there will be an OSC remote control interface."),
             nullptr
         });
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
         app.addCommand ({ startMinimizedSpec, startMinimizedSpec,
-            TRANS("Start SonoBus hidden in the Windows system tray."), {}, nullptr
+            TRANS("Start SonoBus hidden in the system tray."), {}, nullptr
         });
 #endif
 
@@ -421,7 +421,7 @@ public:
         if (setupfile.isNotEmpty()) {
             loadSetupFilename = setupfile;
         }
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
         if (arglist.removeOptionIfFound(startMinimizedSpec))
             startMinimizedToTray = true;
 #endif
@@ -462,15 +462,15 @@ public:
             Desktop::getInstance().setKioskModeComponent (mainWindow.get(), false);
 #endif
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
             if (startMinimizedToTray)
                 mainWindow->setVisible (false);
             else
 #endif
                 mainWindow->setVisible (true);
 
-#if JUCE_WINDOWS
-            // A tray-hidden background instance should not keep Windows awake.
+#if JUCE_WINDOWS || JUCE_LINUX
+            // A tray-hidden background instance should not keep the display awake.
             // Restore SonoBus's normal screen-saver suppression only while its
             // main window is visible.
             Desktop::getInstance().setScreenSaverEnabled (startMinimizedToTray);
@@ -802,7 +802,7 @@ public:
 
     void resumed() override
     {
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
         Desktop::getInstance().setScreenSaverEnabled (mainWindow == nullptr || ! mainWindow->isVisible());
 #else
         Desktop::getInstance().setScreenSaverEnabled (false);

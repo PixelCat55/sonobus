@@ -8,7 +8,7 @@ SonoBus remains licensed under the **GNU General Public License v3.0 (GPLv3)**, 
 
 ## Fork goals
 
-The fork is intended to stay close to upstream SonoBus while adding practical QoL improvements, bug fixes, and lightweight background behavior, primarily for Windows users. Changes should be:
+The fork is intended to stay close to upstream SonoBus while adding practical QoL improvements, bug fixes, and lightweight background behavior for Windows and Linux desktop users. Changes should be:
 
 - small, understandable, and testable;
 - optional where possible;
@@ -87,20 +87,37 @@ Initial changes:
 
 Per maintainer direction, this hardening pass deliberately does **not** change SonoBus password handling/storage or transport encryption behavior.
 
+### 4. Linux Mint tray, autostart, and reproducible build
+
+**Added:** 2026-09-02
+
+The Linux standalone application now includes the fork's native tray-hidden operation and `--start-minimized` support. Its **Settings → OPTIONS** panel provides **Start with Linux (minimized to tray)**, implemented with a per-user freedesktop autostart entry under `~/.config/autostart`.
+
+The Linux implementation:
+
+- uses the same in-process JUCE tray component as the Windows version;
+- keeps audio and networking active while the main window is hidden;
+- restores screen-saver behavior while tray-hidden;
+- requires no root access, service, scheduled task, or helper process;
+- stores the exact executable path in a fork-specific per-user desktop entry;
+- preserves the explicit constraints against password, encryption, and transport changes.
+
+An Ubuntu 22.04 x64 GitHub Actions workflow builds and smoke-tests a compressed standalone package intended for Linux Mint 21.x and newer x64 installations.
+
 ## Build integration
 
-The fork-specific Windows changes are part of the normal source tree. There is **no patch script** or post-checkout transformation required.
+The fork-specific Windows and Linux changes are part of the normal source tree. There is **no patch script** or post-checkout transformation required.
 
-The repository includes a Windows x64 GitHub Actions workflow that:
+The repository includes Windows x64 and Linux x64 GitHub Actions workflows that:
 
-- checks out `main`;
-- provisions SonoBus's existing Steinberg ASIO SDK dependency;
-- verifies the tray and autostart source integration;
-- configures the project with CMake and Visual Studio;
+- check out the requested revision;
+- provision the platform build dependencies;
+- verify the tray and autostart source integration;
+- configure the project with CMake;
 - builds the `SonoBus_Standalone` target;
-- uploads the resulting `SonoBus.exe` as an artifact.
+- upload the resulting platform test package as an artifact.
 
-For manual Windows build information, see [`BUILD_WINDOWS.md`](BUILD_WINDOWS.md).
+For manual build information, see [`BUILD_WINDOWS.md`](BUILD_WINDOWS.md) and [`BUILD_LINUX.md`](BUILD_LINUX.md).
 
 ## Upstream relationship
 

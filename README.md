@@ -4,47 +4,48 @@
 >
 > The original SonoBus project, application, design, and upstream work belong to **Jesse Chappell / Sonosaurus and the SonoBus contributors**. This fork does **not** claim ownership of the original project. It only maintains clearly documented modifications on top of the upstream source.
 
-This fork keeps SonoBus recognizable and compatible while adding practical Windows QoL features, targeted bug fixes, and conservative efficiency improvements for users who leave SonoBus running in the background.
+This fork keeps SonoBus recognizable and compatible while adding practical Windows and Linux QoL features, targeted bug fixes, and conservative efficiency improvements for users who leave SonoBus running in the background.
 
 ## What this fork adds
 
 ### Native minimize to system tray
 
-On the Windows standalone application:
+On the Windows and Linux standalone applications:
 
-- Pressing **Minimize** removes the SonoBus window from the normal taskbar and keeps it running in the Windows notification area.
+- Pressing **Minimize** removes the SonoBus window from the normal taskbar or panel and keeps it running in the system tray.
 - **Left-click** the SonoBus tray icon to restore the window.
 - **Right-click** the tray icon for **Open SonoBus** and **Exit SonoBus**.
 - The normal window **Close (X)** button still exits SonoBus.
 - Audio, networking, and the SonoBus process continue running while the window is hidden.
 - The implementation is built directly into `SonoBus.exe`; there is no tray helper or companion process.
 
-### Start with Windows, minimized to tray
+### Start with the desktop, minimized to tray
 
-The Windows standalone application's **Settings → OPTIONS** tab includes:
+The standalone application's **Settings → OPTIONS** tab includes a platform-specific startup option:
 
-**Start with Windows (minimized to tray)**
+- **Start with Windows (minimized to tray)**
+- **Start with Linux (minimized to tray)**
 
 When enabled:
 
-- SonoBus starts automatically when the current Windows user signs in.
+- SonoBus starts automatically when the current desktop user signs in.
 - It starts directly in the system tray instead of opening the main window.
-- No administrator privileges, service, scheduled task, or helper executable are required.
+- No administrator/root privileges, service, scheduled task, or helper executable are required.
 - Disabling the option removes the startup entry again.
 
 The startup entry follows the exact location of the `SonoBus.exe` that enabled it. If the executable is later moved, disable and re-enable the option from the new location.
 
-For the full behavior and implementation notes, see **[WINDOWS_FEATURES.md](WINDOWS_FEATURES.md)**.
+For full platform behavior and implementation notes, see **[WINDOWS_FEATURES.md](WINDOWS_FEATURES.md)** and **[LINUX_FEATURES.md](LINUX_FEATURES.md)**.
 
 ## Builds
 
-The repository includes a Windows x64 GitHub Actions workflow that builds the standalone application and publishes a `SonoBus.exe` artifact.
+The repository includes Windows x64 and Linux x64 GitHub Actions workflows that build the standalone application and publish platform-specific artifacts.
 
-The workflow verifies that the fork-specific Windows features are present, provisions SonoBus's existing ASIO SDK dependency, configures CMake, builds `SonoBus_Standalone`, and uploads the resulting executable.
+The workflows verify the fork-specific desktop features, provision the platform build dependencies, configure CMake, build `SonoBus_Standalone`, and upload the resulting executable packages.
 
 There is **no patching step required** after cloning this fork. The Windows additions are part of the source tree itself.
 
-For manual compilation details, see **[BUILD_WINDOWS.md](BUILD_WINDOWS.md)**.
+For manual compilation details, see **[BUILD_WINDOWS.md](BUILD_WINDOWS.md)** or **[BUILD_LINUX.md](BUILD_LINUX.md)**.
 
 ## Fork philosophy
 
@@ -110,7 +111,7 @@ For a reproducible manual build of **this fork**, use **[BUILD_WINDOWS.md](BUILD
 
 ### Linux
 
-See [`linux/BUILDING.md`](linux/BUILDING.md) for the upstream Linux build instructions.
+For a reproducible build of this fork on Linux Mint or another Debian-based distribution, see [`BUILD_LINUX.md`](BUILD_LINUX.md). The original upstream-oriented instructions remain in [`linux/BUILDING.md`](linux/BUILDING.md).
 
 ## License and third-party software
 

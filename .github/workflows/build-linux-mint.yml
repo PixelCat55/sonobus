@@ -1,0 +1,115 @@
+name: Build SonoBus QoL and Bug Fixes (Linux)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - qol-bugfixes-optimization
+    paths:
+      - "Source/**"
+      - "CMakeLists.txt"
+      - "deps/**"
+      - "JUCE/**"
+      - "linux/**"
+      - "BUILD_LINUX.md"
+      - "LINUX_FEATURES.md"
+      - ".github/workflows/build-linux-mint.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonobus-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux-x64:
+    name: Linux Mint compatible x64 Release
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libasound2-dev \
+            libjack-jackd2-dev \
+            libopus-dev \
+            libx11-dev \
+            libxext-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxcomposite-dev \
+            libgl1-mesa-dev \
+            libfreetype6-dev \
+            xvfb \
+            xauth
+
+      - name: Verify Linux fork features
+        shell: bash
+        run: |
+          set -euxo pipefail
+          grep -q 'class SonoBusSystemTrayIcon final' Source/SonoStandaloneFilterWindow.h
+          grep -q 'JUCE_WINDOWS || JUCE_LINUX' Source/SonoStandaloneFilterWindow.h
+          grep -q 'Start with Linux (minimized to tray)' Source/OptionsView.cpp
+          grep -q 'sonobus-qol-bug-fixes.desktop' Source/OptionsView.cpp
+          grep -q '\-\-start-minimized' Source/SonoStandaloneFilterApp.cpp
+          git diff --check
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build SonoBus standalone
+        shell: bash
+        run: cmake --build build-linux --target SonoBus_Standalone --parallel 2
+
+      - name: Verify executable
+        shell: bash
+        run: |
+          set -euxo pipefail
+          exe="build-linux/SonoBus_artefacts/Release/Standalone/sonobus"
+          test -x "$exe"
+          file "$exe"
+          if ldd "$exe" | grep -q 'not found'; then
+            ldd "$exe"
+            exit 1
+          fi
+          xvfb-run -a timeout 20s "$exe" --version
+          sha256sum "$exe"
+
+      - name: Package Linux Mint build
+        shell: bash
+        run: |
+          set -euxo pipefail
+          package="SonoBus-QoL-Bug-Fixes-Linux-x64"
+          mkdir -p "artifact/$package"
+          install -m 755 build-linux/SonoBus_artefacts/Release/Standalone/sonobus "artifact/$package/sonobus"
+          install -m 644 BUILD_LINUX.md "artifact/$package/README.md"
+          install -m 644 linux/sonobus.desktop "artifact/$package/sonobus.desktop"
+          install -m 644 images/sonobus_logo@2x.png "artifact/$package/sonobus.png"
+          tar -C artifact -czf "artifact/$package.tar.gz" "$package"
+          sha256sum "artifact/$package/sonobus" "artifact/$package.tar.gz"
+
+      - name: Upload Linux Mint build
+        uses: actions/upload-artifact@v4
+        with:
+          name: SonoBus-Linux-x64-QoL-Bug-Fixes
+          path: artifact/SonoBus-QoL-Bug-Fixes-Linux-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 30

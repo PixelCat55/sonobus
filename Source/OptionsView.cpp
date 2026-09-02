@@ -35,9 +35,10 @@ enum {
     separatorColourId = 0x1002850,
 };
 
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
 namespace
 {
+#if JUCE_WINDOWS
 String getSonoBusWindowsStartupRegistryPath()
 {
     return "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\SonoBus";
@@ -66,6 +67,74 @@ bool setSonoBusWindowsStartupEnabled (bool shouldEnable)
         return true;
 
     return WindowsRegistry::deleteValue (registryPath);
+}
+#else
+String quoteLinuxDesktopExecArgument (String argument)
+{
+    argument = argument.replace ("\\", "\\\\")
+                       .replace ("\"", "\\\"")
+                       .replace ("`", "\\`")
+                       .replace ("$", "\\$");
+    return "\"" + argument + "\"";
+}
+
+File getSonoBusLinuxAutostartFile()
+{
+    return File::getSpecialLocation (File::userApplicationDataDirectory)
+        .getChildFile ("autostart")
+        .getChildFile ("sonobus-qol-bug-fixes.desktop");
+}
+
+String getSonoBusLinuxAutostartContents()
+{
+    const auto executablePath = File::getSpecialLocation (File::currentExecutableFile).getFullPathName();
+    return "[Desktop Entry]\n"
+           "Type=Application\n"
+           "Version=1.0\n"
+           "Name=SonoBus QoL and Bug Fixes\n"
+           "Comment=Start SonoBus minimized to the system tray\n"
+           "Exec=" + quoteLinuxDesktopExecArgument (executablePath) + " --start-minimized\n"
+           "Terminal=false\n"
+           "X-GNOME-Autostart-enabled=true\n";
+}
+
+bool isSonoBusLinuxStartupEnabled()
+{
+    const auto autostartFile = getSonoBusLinuxAutostartFile();
+    return autostartFile.existsAsFile()
+           && autostartFile.loadFileAsString() == getSonoBusLinuxAutostartContents();
+}
+
+bool setSonoBusLinuxStartupEnabled (bool shouldEnable)
+{
+    const auto autostartFile = getSonoBusLinuxAutostartFile();
+
+    if (! shouldEnable)
+        return ! autostartFile.existsAsFile() || autostartFile.deleteFile();
+
+    if (autostartFile.getParentDirectory().createDirectory().failed())
+        return false;
+
+    return autostartFile.replaceWithText (getSonoBusLinuxAutostartContents(), false, false, "\n");
+}
+#endif
+
+bool isSonoBusStartupEnabled()
+{
+#if JUCE_WINDOWS
+    return isSonoBusWindowsStartupEnabled();
+#else
+    return isSonoBusLinuxStartupEnabled();
+#endif
+}
+
+bool setSonoBusStartupEnabled (bool shouldEnable)
+{
+#if JUCE_WINDOWS
+    return setSonoBusWindowsStartupEnabled (shouldEnable);
+#else
+    return setSonoBusLinuxStartupEnabled (shouldEnable);
+#endif
 }
 }
 #endif
@@ -294,11 +363,18 @@ OptionsView::OptionsView(SonobusAudioProcessor& proc, std::function<AudioDeviceM
     mOptionsAutoReconnectButton = std::make_unique<ToggleButton>(TRANS("Auto-Reconnect to Last Group"));
     mAutoReconnectAttachment = std::make_unique<AudioProcessorValueTreeState::ButtonAttachment> (processor.getValueTreeState(), SonobusAudioProcessor::paramAutoReconnectLast, *mOptionsAutoReconnectButton);
 
-#if JUCE_WINDOWS
-    mOptionsStartWithWindowsButton = std::make_unique<ToggleButton>(TRANS("Start with Windows (minimized to tray)"));
-    mOptionsStartWithWindowsButton->setTooltip(TRANS("Automatically launch SonoBus when you sign in to Windows and keep it hidden in the system tray."));
-    mOptionsStartWithWindowsButton->setToggleState(isSonoBusWindowsStartupEnabled(), dontSendNotification);
-    mOptionsStartWithWindowsButton->addListener(this);
+#if JUCE_WINDOWS || JUCE_LINUX
+   #if JUCE_WINDOWS
+    const auto startupLabel = TRANS("Start with Windows (minimized to tray)");
+    const auto startupTooltip = TRANS("Automatically launch SonoBus when you sign in to Windows and keep it hidden in the system tray.");
+   #else
+    const auto startupLabel = TRANS("Start with Linux (minimized to tray)");
+    const auto startupTooltip = TRANS("Automatically launch SonoBus when you sign in to Linux and keep it hidden in the system tray.");
+   #endif
+    mOptionsStartWithSystemButton = std::make_unique<ToggleButton>(startupLabel);
+    mOptionsStartWithSystemButton->setTooltip(startupTooltip);
+    mOptionsStartWithSystemButton->setToggleState(isSonoBusStartupEnabled(), dontSendNotification);
+    mOptionsStartWithSystemButton->addListener(this);
 #endif
 
     mOptionsOverrideSamplerateButton = std::make_unique<ToggleButton>(TRANS("Override Device Sample Rate"));
@@ -433,8 +509,8 @@ OptionsView::OptionsView(SonobusAudioProcessor& proc, std::function<AudioDeviceM
     if (JUCEApplicationBase::isStandaloneApp()) {
         mOptionsComponent->addAndMakeVisible(mOptionsOverrideSamplerateButton.get());
         mOptionsComponent->addAndMakeVisible(mOptionsShouldCheckForUpdateButton.get());
-#if JUCE_WINDOWS
-        mOptionsComponent->addAndMakeVisible(mOptionsStartWithWindowsButton.get());
+#if JUCE_WINDOWS || JUCE_LINUX
+        mOptionsComponent->addAndMakeVisible(mOptionsStartWithSystemButton.get());
 #endif
         if (mOptionsAllowBluetoothInput) {
             mOptionsComponent->addAndMakeVisible(mOptionsAllowBluetoothInput.get());
@@ -673,9 +749,9 @@ void OptionsView::updateState(bool ignorecheck)
             Value * val = getShouldCheckForNewVersionValue();
             mOptionsShouldCheckForUpdateButton->setToggleState((bool)val->getValue(), dontSendNotification);
         }
-#if JUCE_WINDOWS
-        if (mOptionsStartWithWindowsButton)
-            mOptionsStartWithWindowsButton->setToggleState(isSonoBusWindowsStartupEnabled(), dontSendNotification);
+#if JUCE_WINDOWS || JUCE_LINUX
+        if (mOptionsStartWithSystemButton)
+            mOptionsStartWithSystemButton->setToggleState(isSonoBusStartupEnabled(), dontSendNotification);
 #endif
 
         if (getAllowBluetoothInputValue && mOptionsAllowBluetoothInput) {
@@ -814,11 +890,11 @@ void OptionsView::updateLayout()
     optionsAutoReconnectBox.items.add(FlexItem(10, 12).withFlex(0));
     optionsAutoReconnectBox.items.add(FlexItem(180, minpassheight, *mOptionsAutoReconnectButton).withMargin(0).withFlex(1));
 
-#if JUCE_WINDOWS
-    optionsStartWithWindowsBox.items.clear();
-    optionsStartWithWindowsBox.flexDirection = FlexBox::Direction::row;
-    optionsStartWithWindowsBox.items.add(FlexItem(10, 12).withFlex(0));
-    optionsStartWithWindowsBox.items.add(FlexItem(180, minpassheight, *mOptionsStartWithWindowsButton).withMargin(0).withFlex(1));
+#if JUCE_WINDOWS || JUCE_LINUX
+    optionsStartWithSystemBox.items.clear();
+    optionsStartWithSystemBox.flexDirection = FlexBox::Direction::row;
+    optionsStartWithSystemBox.items.add(FlexItem(10, 12).withFlex(0));
+    optionsStartWithSystemBox.items.add(FlexItem(180, minpassheight, *mOptionsStartWithSystemButton).withMargin(0).withFlex(1));
 #endif
 
     optionsOverrideSamplerateBox.items.clear();
@@ -887,9 +963,9 @@ void OptionsView::updateLayout()
     //optionsBox.items.add(FlexItem(100, minpassheight, optionsHearlatBox).withMargin(2).withFlex(0));
     optionsBox.items.add(FlexItem(100, minpassheight, optionsSnapToMouseBox).withMargin(2).withFlex(0));
     optionsBox.items.add(FlexItem(100, minpassheight, optionsAutoReconnectBox).withMargin(2).withFlex(0));
-#if JUCE_WINDOWS
+#if JUCE_WINDOWS || JUCE_LINUX
     if (JUCEApplicationBase::isStandaloneApp())
-        optionsBox.items.add(FlexItem(100, minpassheight, optionsStartWithWindowsBox).withMargin(2).withFlex(0));
+        optionsBox.items.add(FlexItem(100, minpassheight, optionsStartWithSystemBox).withMargin(2).withFlex(0));
 #endif
     optionsBox.items.add(FlexItem(100, minitemheight, optionsUdpBox).withMargin(2).withFlex(0));
     if (JUCEApplicationBase::isStandaloneApp()) {
@@ -1211,15 +1287,15 @@ void OptionsView::buttonClicked (Button* buttonThatWasClicked)
             //}
         }
     }
-#if JUCE_WINDOWS
-    else if (buttonThatWasClicked == mOptionsStartWithWindowsButton.get()) {
+#if JUCE_WINDOWS || JUCE_LINUX
+    else if (buttonThatWasClicked == mOptionsStartWithSystemButton.get()) {
         if (JUCEApplicationBase::isStandaloneApp()) {
-            const bool shouldEnable = mOptionsStartWithWindowsButton->getToggleState();
-            if (! setSonoBusWindowsStartupEnabled (shouldEnable)) {
-                mOptionsStartWithWindowsButton->setToggleState(!shouldEnable, dontSendNotification);
+            const bool shouldEnable = mOptionsStartWithSystemButton->getToggleState();
+            if (! setSonoBusStartupEnabled (shouldEnable)) {
+                mOptionsStartWithSystemButton->setToggleState(!shouldEnable, dontSendNotification);
                 AlertWindow::showMessageBoxAsync(AlertWindow::WarningIcon,
                                                  TRANS("Startup Setting"),
-                                                 TRANS("SonoBus could not update the Windows startup setting."));
+                                                 TRANS("SonoBus could not update the startup setting."));
             }
         }
     }

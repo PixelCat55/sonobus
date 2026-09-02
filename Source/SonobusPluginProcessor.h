@@ -1109,6 +1109,7 @@ private:
     class EventThread;
     class ServerThread;
     class ClientThread;
+    class HostParameterUpdateDispatcher;
     
     CriticalSection  mEndpointsLock;
     ReadWriteLock    mCoreLock;
@@ -1118,6 +1119,7 @@ private:
     OwnedArray<EndpointState> mEndpoints;
     
     OwnedArray<RemotePeer> mRemotePeers;
+    std::atomic<int> mRemotePeerCount { 0 };
 
 
     Array<AooServerConnectionInfo> mRecentConnectionInfos;
@@ -1267,6 +1269,10 @@ private:
     // main state
     AudioProcessorValueTreeState mState;
     UndoManager                  mUndoManager;
+    std::unique_ptr<HostParameterUpdateDispatcher> mHostParameterUpdateDispatcher;
+
+    std::atomic<bool> mPendingMetTempoHostUpdate { false };
+    std::atomic<bool> mPendingMetEnabledHostUpdate { false };
 
     JUCE_DECLARE_WEAK_REFERENCEABLE (SonobusAudioProcessor)
 };

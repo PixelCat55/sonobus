@@ -533,6 +533,44 @@ public:
     
 };
 
+class SonobusAudioProcessor::HostParameterUpdateDispatcher : private AsyncUpdater
+{
+public:
+    explicit HostParameterUpdateDispatcher(SonobusAudioProcessor& processor_)
+        : processor(processor_)
+    {
+    }
+
+    ~HostParameterUpdateDispatcher() override
+    {
+        cancelPendingUpdate();
+    }
+
+    void dispatchPendingUpdates()
+    {
+        if (processor.mPendingMetTempoHostUpdate.load(std::memory_order_acquire)
+            || processor.mPendingMetEnabledHostUpdate.load(std::memory_order_acquire)) {
+            triggerAsyncUpdate();
+        }
+    }
+
+private:
+    void handleAsyncUpdate() override
+    {
+        if (processor.mPendingMetTempoHostUpdate.exchange(false, std::memory_order_acq_rel)) {
+            processor.mTempoParameter->setValueNotifyingHost(
+                processor.mTempoParameter->convertTo0to1(processor.mMetTempo.get()));
+        }
+
+        if (processor.mPendingMetEnabledHostUpdate.exchange(false, std::memory_order_acq_rel)) {
+            processor.mState.getParameter(SonobusAudioProcessor::paramMetEnabled)->setValueNotifyingHost(
+                processor.mMetEnabled.get() ? 1.0f : 0.0f);
+        }
+    }
+
+    SonobusAudioProcessor& processor;
+};
+
 
 enum {
     OutMixBusIndex = 0,
@@ -796,6 +834,7 @@ mState (*this, &mUndoManager, "SonoBusAoO",
     mState.getParameter(paramSendChannels)->setValue(mState.getParameter(paramSendChannels)->convertTo0to1(mSendChannels.get()));
 
     mTempoParameter = mState.getParameter(paramMetTempo);
+    mHostParameterUpdateDispatcher = std::make_unique<HostParameterUpdateDispatcher>(*this);
     
     mMetronome = std::make_unique<SonoAudio::Metronome>();
     
@@ -861,6 +900,7 @@ SonobusAudioProcessor::~SonobusAudioProcessor()
     mTransportSource.removeChangeListener(this);
 
     cleanupAoo();
+    mHostParameterUpdateDispatcher.reset();
 }
 
 void SonobusAudioProcessor::moveOldMisplacedFiles()
@@ -1079,6 +1119,7 @@ void SonobusAudioProcessor::cleanupAoo()
         mAooDummySource.reset();
         
         mRemotePeers.clear();
+        mRemotePeerCount.store(0, std::memory_order_release);
         
         mEndpoints.clear();
     }
@@ -3307,6 +3348,9 @@ void SonobusAudioProcessor::doSendData()
 
     }
 
+    if (mHostParameterUpdateDispatcher != nullptr)
+        mHostParameterUpdateDispatcher->dispatchPendingUpdates();
+
 
 }
 
@@ -4647,6 +4691,7 @@ bool SonobusAudioProcessor::removeAllRemotePeers()
     {
         const ScopedWriteLock slw (mCoreLock);
         mRemotePeers.clearQuick(false); // not deleting objects here
+        mRemotePeerCount.store(0, std::memory_order_release);
     }
     
     // reset matrix
@@ -4689,6 +4734,7 @@ bool SonobusAudioProcessor::removeRemotePeer(int index, bool sendblock)
             {
                 const ScopedWriteLock slw (mCoreLock);
                 mRemotePeers.remove(index, false); // not deleting in scoped write lock
+                mRemotePeerCount.store(mRemotePeers.size(), std::memory_order_release);
             }
 
         }
@@ -4700,8 +4746,7 @@ bool SonobusAudioProcessor::removeRemotePeer(int index, bool sendblock)
 
 int SonobusAudioProcessor::getNumberRemotePeers() const
 {
-    const ScopedReadLock sl (mCoreLock);
-    return mRemotePeers.size();
+    return mRemotePeerCount.load(std::memory_order_acquire);
 }
 
 void SonobusAudioProcessor::setRemotePeerLevelGain(int index, float levelgain)
@@ -6107,6 +6152,7 @@ SonobusAudioProcessor::RemotePeer * SonobusAudioProcessor::doAddRemotePeerIfNece
         {
             const ScopedWriteLock slw (mCoreLock);
             mRemotePeers.add(retpeer);
+            mRemotePeerCount.store(mRemotePeers.size(), std::memory_order_release);
         }
 
         //updateRemotePeerUserFormat(mRemotePeers.size()-1);
@@ -6263,6 +6309,7 @@ bool SonobusAudioProcessor::removeAllRemotePeersWithEndpoint(EndpointState * end
                 const ScopedWriteLock slw (mCoreLock);
 
                 removed.add(mRemotePeers.removeAndReturn(i));
+                mRemotePeerCount.store(mRemotePeers.size(), std::memory_order_release);
             }
         }
     }
@@ -6289,6 +6336,7 @@ bool SonobusAudioProcessor::doRemoveRemotePeerIfNecessary(EndpointState * endpoi
             {
                 const ScopedWriteLock slw (mCoreLock);
                 removed.add(mRemotePeers.removeAndReturn(i));
+                mRemotePeerCount.store(mRemotePeers.size(), std::memory_order_release);
             }
             break;
         }
@@ -7437,7 +7485,7 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     if (syncmethost) {
         if (rposInfo && fabs(useBpm - mMetTempo.get()) > 0.001) {
             mMetTempo = useBpm;
-            mTempoParameter->setValueNotifyingHost(mTempoParameter->convertTo0to1(mMetTempo.get()));
+            mPendingMetTempoHostUpdate.store(true, std::memory_order_release);
         }
     }
     
@@ -7637,12 +7685,7 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 
         filePlaybackMeterSource.measureBlock(fileBuffer);
 
-        int srcchans = fileChannels;
-        mFilePlaybackChannelGroup.params.numChannels = srcchans;
-        mFilePlaybackChannelGroup.commitMonitorDelayParams(); // need to do this too
-
-        mRecFilePlaybackChannelGroup.params.numChannels = srcchans;
-        mRecFilePlaybackChannelGroup.commitMonitorDelayParams(); // need to do this too
+        const int srcchans = fileChannels;
 
         if (sendfileaudio) {
 
@@ -7708,8 +7751,7 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     if (dometfilesyncstart) {
         metenabled = mTransportSource.isPlaying();
         mMetEnabled = metenabled;
-        // notify host
-        mState.getParameter(paramMetEnabled)->setValueNotifyingHost(metenabled ? 1.0f : 0.0f);
+        mPendingMetEnabledHostUpdate.store(true, std::memory_order_release);
     }
 
     if (metenabled != mLastMetEnabled) {
@@ -7843,10 +7885,10 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 const ScopedReadLock sl (remote->sinkLock); // not contended, should be able to get rid of
 
                 // just in case, should be exceedingly rare this is necessary
-                if (remote->workBuffer.getNumSamples() < currSamplesPerBlock
+                if (remote->workBuffer.getNumSamples() < numSamples
                     || remote->recvChannels > remote->workBuffer.getNumChannels()
                     || mainBusOutputChannels > remote->workBuffer.getNumChannels()) {
-                    remote->workBuffer.setSize(jmax(2, jmax(mainBusOutputChannels, remote->recvChannels)), currSamplesPerBlock, false, false, true);
+                    remote->workBuffer.setSize(jmax(2, jmax(mainBusOutputChannels, remote->recvChannels)), numSamples, false, false, true);
                 }
 
                 remote->workBuffer.clear(0, numSamples);
@@ -8395,7 +8437,15 @@ void SonobusAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 
     lastSamplesPerBlock = numSamples;
 
-    notifySendThread();
+    const bool hasNetworkWork = mIsConnectedToServer.get()
+                                || mRemotePeerCount.load(std::memory_order_acquire) > 0;
+    const bool hasDeferredWork = mNeedsSampleSetup.get()
+                                 || mPendingUnmute.get()
+                                 || mPendingMetTempoHostUpdate.load(std::memory_order_acquire)
+                                 || mPendingMetEnabledHostUpdate.load(std::memory_order_acquire);
+
+    if (hasNetworkWork || hasDeferredWork)
+        notifySendThread();
     
     mLastWet = wetnow;
     mLastDry = drynow;
@@ -9643,6 +9693,12 @@ bool SonobusAudioProcessor::loadURLIntoTransport (const URL& audioURL)
     if (reader != nullptr)
     {
         mCurrTransportURL = URL(audioURL);
+
+        const int sourceChannels = static_cast<int>(reader->numChannels);
+        mFilePlaybackChannelGroup.params.numChannels = sourceChannels;
+        mFilePlaybackChannelGroup.commitMonitorDelayParams();
+        mRecFilePlaybackChannelGroup.params.numChannels = sourceChannels;
+        mRecFilePlaybackChannelGroup.commitMonitorDelayParams();
 
         mCurrentAudioFileSource.reset (new AudioFormatReaderSource (reader, true));
 

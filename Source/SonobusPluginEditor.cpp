@@ -5924,7 +5924,7 @@ void SonobusAudioProcessorEditor::populateRecentSetupsMenu(PopupMenu & popup)
     popup.clear();
 
     SafePointer<SonobusAudioProcessorEditor> safeThis(this);
-    auto callback = [safeThis](File file) mutable {
+    auto callback = [safeThis](File file) {
         if (safeThis != nullptr)
             safeThis->loadSettingsFromFile(file);
     };

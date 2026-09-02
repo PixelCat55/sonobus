@@ -24,6 +24,7 @@ class SoundboardView : public Component,
 {
 public:
     explicit SoundboardView(SonobusAudioProcessor& audioproc, SoundboardChannelProcessor* channelProcessor, File supportDir);
+    ~SoundboardView() override;
 
     void paint(Graphics&) override;
 

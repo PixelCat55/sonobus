@@ -1685,7 +1685,6 @@ bool SonobusAudioProcessor::getRemotePeerEffectsActive(int index, int changroup)
 void SonobusAudioProcessor::setMetronomeMonitorDelayParams(SonoAudio::DelayParams & params)
 {
     mMetChannelGroup.params.monitorDelayParams = params;
-    //mInputChannelGroups[changroup].monitorDelayParamsChanged = true;
     // commit them now
     mMetChannelGroup.commitMonitorDelayParams();
 
@@ -1754,7 +1753,6 @@ float SonobusAudioProcessor::getMetronomeMonitor() const
 void SonobusAudioProcessor::setFilePlaybackMonitorDelayParams(SonoAudio::DelayParams & params)
 {
     mFilePlaybackChannelGroup.params.monitorDelayParams = params;
-    //mInputChannelGroups[changroup].monitorDelayParamsChanged = true;
     // commit them now
     mFilePlaybackChannelGroup.commitMonitorDelayParams();
 
@@ -1860,7 +1858,6 @@ void SonobusAudioProcessor::setInputMonitorDelayParams(int changroup, SonoAudio:
 {
     if (changroup >= 0 && changroup < MAX_CHANGROUPS) {
         mInputChannelGroups[changroup].params.monitorDelayParams = params;
-        //mInputChannelGroups[changroup].monitorDelayParamsChanged = true;
         // commit them now
         mInputChannelGroups[changroup].commitMonitorDelayParams();
     }

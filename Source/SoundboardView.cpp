@@ -47,6 +47,15 @@ SoundboardView::SoundboardView(SonobusAudioProcessor& audioproc, SoundboardChann
     };
 }
 
+SoundboardView::~SoundboardView()
+{
+    if (processor != nullptr)
+        processor->onPlaybackStateChange = {};
+
+    if (mSampleEditCalloutBox != nullptr)
+        mSampleEditCalloutBox->removeComponentListener(this);
+}
+
 void SoundboardView::createBasePanels()
 {
     buttonBox.items.clear();
@@ -676,6 +685,9 @@ void SoundboardView::showMenuButtonContextMenu()
 
     SafePointer <SoundboardView> safeThis(this);
     auto callback = [safeThis](GenericItemChooser* chooser, int index) mutable {
+        if (safeThis == nullptr)
+            return;
+
         switch (index) {
             case 0:
                 safeThis->clickedAddSoundboard();
@@ -697,10 +709,14 @@ void SoundboardView::showMenuButtonContextMenu()
 
 void SoundboardView::clickedAddSoundboard()
 {
-    auto callback = [this](const String& name) {
-        Soundboard& createdSoundboard = processor->addSoundboard(name, true);
-        updateSoundboardSelector();
-        rebuildButtons();
+    SafePointer<SoundboardView> safeThis(this);
+    auto callback = [safeThis](const String& name) mutable {
+        if (safeThis == nullptr)
+            return;
+
+        safeThis->processor->addSoundboard(name, true);
+        safeThis->updateSoundboardSelector();
+        safeThis->rebuildButtons();
     };
 
     auto content = std::make_unique<SoundboardEditView>(callback, nullptr);
@@ -724,10 +740,14 @@ void SoundboardView::clickedRenameSoundboard()
     if (selectedIndex < 0 || selectedIndex >= processor->getNumberOfSoundboards())
         return;
 
-    auto callback = [this](const String& name) {
-        int selectedSoundboardIndex = mBoardSelectComboBox->getSelectedItemIndex();
-        processor->renameSoundboard(selectedSoundboardIndex, name);
-        updateSoundboardSelector();
+    SafePointer<SoundboardView> safeThis(this);
+    auto callback = [safeThis](const String& name) mutable {
+        if (safeThis == nullptr)
+            return;
+
+        int selectedSoundboardIndex = safeThis->mBoardSelectComboBox->getSelectedItemIndex();
+        safeThis->processor->renameSoundboard(selectedSoundboardIndex, name);
+        safeThis->updateSoundboardSelector();
     };
 
     auto& currentSoundboard = processor->getSoundboard(selectedIndex);
@@ -754,13 +774,18 @@ void SoundboardView::clickedDuplicateSoundboard()
 
     auto& currentSoundboard = processor->getSoundboard(currindex);
 
-    auto callback = [this, currindex](const String& name) {
-        auto currSoundboard = processor->getSoundboard(currindex);
-        auto & createdSoundboard = processor->addSoundboard(name, true);
+    SafePointer<SoundboardView> safeThis(this);
+    auto callback = [safeThis, currindex](const String& name) mutable {
+        if (safeThis == nullptr || currindex < 0
+            || currindex >= static_cast<int>(safeThis->processor->getNumberOfSoundboards()))
+            return;
+
+        auto currSoundboard = safeThis->processor->getSoundboard(currindex);
+        auto& createdSoundboard = safeThis->processor->addSoundboard(name, true);
         createdSoundboard = currSoundboard;
         createdSoundboard.setName(name);
-        updateSoundboardSelector();
-        rebuildButtons();
+        safeThis->updateSoundboardSelector();
+        safeThis->rebuildButtons();
     };
 
     auto content = std::make_unique<SoundboardEditView>(callback, nullptr);
@@ -804,6 +829,9 @@ void SoundboardView::clickedDeleteSoundboard()
 
     SafePointer <SoundboardView> safeThis(this);
     auto callback = [safeThis](GenericItemChooser* chooser, int index) mutable {
+        if (safeThis == nullptr)
+            return;
+
         // Delete soundboard.
         if (index == 2) {
             int selectedIndex = safeThis->mBoardSelectComboBox->getSelectedItemIndex();
@@ -831,10 +859,19 @@ void SoundboardView::clickedAddSoundSample()
 
 void SoundboardView::clickedEditSoundSample(Component& button, SoundSample& sample)
 {
-    auto submitcallback = [this, &sample, &button](SampleEditView& editView) {
+    SafePointer<SoundboardView> safeThis(this);
+    SafePointer<Component> safeButton(&button);
+    auto* samplePtr = &sample;
+
+    auto submitcallback = [safeThis, safeButton, samplePtr](SampleEditView& editView) mutable {
+        if (safeThis == nullptr || ! safeThis->processor->containsSample(samplePtr))
+            return;
+
+        auto& sample = *samplePtr;
+
         if (editView.isDeleteSample()) {
-            processor->deleteSoundSample(sample);
-            rebuildButtons();
+            safeThis->processor->deleteSoundSample(sample);
+            safeThis->rebuildButtons();
         }
         else {
             auto sampleName = editView.getSampleName();
@@ -856,23 +893,29 @@ void SoundboardView::clickedEditSoundSample(Component& button, SoundSample& samp
             sample.setReplayBehaviour(replayBehaviour);
             sample.setGain(gain);
             sample.setHotkeyCode(hotkeyCode);
-            processor->editSoundSample(sample);
+            safeThis->processor->editSoundSample(sample);
 
-            if (auto * pbutton = dynamic_cast<SonoPlaybackProgressButton*>(&button)) {
-                updateButton(pbutton, sample);
+            if (auto* pbutton = dynamic_cast<SonoPlaybackProgressButton*>(safeButton.getComponent())) {
+                safeThis->updateButton(pbutton, sample);
             } else {
-                rebuildButtons();
+                safeThis->rebuildButtons();
             }
         }
     };
 
-    auto gaincallback = [this, &sample, &button](SampleEditView& editView) {
-        sample.setGain(editView.getGain());
-        processor->updatePlaybackSettings(sample);
+    auto gaincallback = [safeThis, samplePtr](SampleEditView& editView) mutable {
+        if (safeThis == nullptr || ! safeThis->processor->containsSample(samplePtr))
+            return;
+
+        samplePtr->setGain(editView.getGain());
+        safeThis->processor->updatePlaybackSettings(*samplePtr);
     };
 
-    auto applyToOthersCallback = [this, &sample, &button](SampleEditView& editView) {
-        applyOptionsToAll(sample);
+    auto applyToOthersCallback = [safeThis, samplePtr](SampleEditView&) mutable {
+        if (safeThis == nullptr || ! safeThis->processor->containsSample(samplePtr))
+            return;
+
+        safeThis->applyOptionsToAll(*samplePtr);
     };
 
     

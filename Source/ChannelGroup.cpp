@@ -60,7 +60,7 @@ void ChannelGroup::copyParametersFrom(const ChannelGroup& other)
     expanderParamsChanged = true;
     eqParamsChanged = true;
     limiterParamsChanged = true;
-    monitorDelayParamsChanged = true;
+    commitMonitorDelayParams();
 
 }
 
@@ -194,6 +194,8 @@ void ChannelGroup::setMonitoringDelayTimeMs(double delayms)
 {
     params.monitorDelayParams.delayTimeMs = delayms;
     auto newsamps = 1e-3 * delayms * sampleRate;
+
+    const ScopedLock lock(_monitorDelayLock);
     if ( fabs(_monitorDelayTimeSamples - newsamps) > 1) {
         _monitorDelayTimeSamples = jmin(newsamps, (double)MAX_DELAY_SAMPLES);
         _monitorDelayTimeChanged = true;
@@ -402,11 +404,6 @@ void ChannelGroup::processMonitor (AudioBuffer<float>& frombuffer, int fromStart
     auto & procstate = oprocstate != nullptr ? *oprocstate : monProcState;
     auto & revprocstate = orevprocstate != nullptr ? *orevprocstate : revProcState;
 
-
-    if (monitorDelayParamsChanged) {
-        commitMonitorDelayParams();
-        monitorDelayParamsChanged = false;
-    }
 
     bool domondelay = _monitorDelayActive.load();
     int mondelayfade = 0;
@@ -850,5 +847,4 @@ void ChannelGroup::commitMonitorDelayParams()
     setMonitoringDelayTimeMs(params.monitorDelayParams.delayTimeMs);
     setMonitoringDelayEnabled(params.monitorDelayParams.enabled, params.numChannels);
 }
-
 

@@ -401,7 +401,7 @@ bool SoundboardChannelProcessor::processAudioBlock(int numSamples)
     AudioSourceChannelInfo info(&buffer, 0, numSamples);
     mixer.getNextAudioBlock(info);
 
-    if (buffer.hasBeenCleared() && !channelGroup.params.monitorDelayParams.enabled ) {
+    if (buffer.hasBeenCleared() && ! channelGroup.isMonitoringDelayEnabled()) {
         return false;
     }
 

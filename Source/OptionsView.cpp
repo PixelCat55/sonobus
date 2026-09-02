@@ -1260,20 +1260,24 @@ void OptionsView::buttonClicked (Button* buttonThatWasClicked)
             title = TRANS("Host session reload required");
         }
 
+        SafePointer<OptionsView> safeThis(this);
         AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
                                      title,
                                      message,
                                      TRANS("Change and Close"),
                                      TRANS("Cancel"),
                                      this,
-                                     ModalCallbackFunction::create( [this,newval](int result) {
+                                     ModalCallbackFunction::create( [safeThis, newval](int result) mutable {
+            if (safeThis == nullptr)
+                return;
+
             if (result) {
 
-                processor.setUseUniversalFont(newval);
+                safeThis->processor.setUseUniversalFont(newval);
 
                 if (JUCEApplication::isStandaloneApp()) {
-                    if (saveSettingsIfNeeded) {
-                        saveSettingsIfNeeded();
+                    if (safeThis->saveSettingsIfNeeded) {
+                        safeThis->saveSettingsIfNeeded();
                     }
                     Timer::callAfterDelay(500, [] {
                         JUCEApplication::getInstance()->quit();
@@ -1281,7 +1285,7 @@ void OptionsView::buttonClicked (Button* buttonThatWasClicked)
                 }
             }
             else {
-                mOptionsUnivFontButton->setToggleState(!newval, dontSendNotification);
+                safeThis->mOptionsUnivFontButton->setToggleState(!newval, dontSendNotification);
             }
         }));
 
@@ -1319,26 +1323,30 @@ void OptionsView::choiceButtonSelected(SonoChoiceButton *comp, int index, int id
             title = TRANS("Host session reload required");
         }
 
+        SafePointer<OptionsView> safeThis(this);
         AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
                                      title,
                                      message,
                                      TRANS("Change and Close"),
                                      TRANS("Cancel"),
                                      this,
-                                     ModalCallbackFunction::create( [this,code](int result) {
+                                     ModalCallbackFunction::create( [safeThis, code](int result) mutable {
+            if (safeThis == nullptr)
+                return;
+
             if (result) {
                 String langOverride = code;
-                if (setupLocalisation == nullptr || !setupLocalisation(langOverride)) {
+                if (safeThis->setupLocalisation == nullptr || !safeThis->setupLocalisation(langOverride)) {
                     DBG("Error overriding language with " << langOverride);
 
                     langOverride = "";
                 }
 
-                processor.setLanguageOverrideCode(langOverride);
+                safeThis->processor.setLanguageOverrideCode(langOverride);
 
                 if (JUCEApplication::isStandaloneApp()) {
-                    if (saveSettingsIfNeeded) {
-                        saveSettingsIfNeeded();
+                    if (safeThis->saveSettingsIfNeeded) {
+                        safeThis->saveSettingsIfNeeded();
                     }
                     Timer::callAfterDelay(500, [] {
                         JUCEApplication::getInstance()->quit();
@@ -1461,4 +1469,3 @@ void OptionsView::paint(Graphics & g)
     g.drawRoundedRectangle(bounds.toFloat(), 6.0f, 0.5f);
 */
 }
-

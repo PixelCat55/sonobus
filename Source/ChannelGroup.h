@@ -128,6 +128,7 @@ public:
 
     void setMonitoringDelayEnabled(bool enabled, int numchans);
     void setMonitoringDelayTimeMs(double delayms);
+    bool isMonitoringDelayEnabled() const noexcept { return _monitorDelayActive.load(); }
 
     ChannelGroupParams params;
 
@@ -165,7 +166,6 @@ public:
 
     // monitoring delay
     std::unique_ptr<juce::dsp::DelayLine<float,juce::dsp::DelayLineInterpolationTypes::None> > monitorDelayLine;
-    bool monitorDelayParamsChanged = false;
     double _monitorDelayTimeSamples = 0.0;
     int _monitorDelayChans = 0;
     std::atomic<bool>  _monitorDelayTimeChanged { false };

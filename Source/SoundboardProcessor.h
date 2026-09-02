@@ -123,6 +123,9 @@ public:
      */
     void updatePlaybackSettings(SoundSample& sampleToUpdate);
 
+    /** Returns whether the sample is still owned by any loaded soundboard. */
+    bool containsSample(const SoundSample* sample);
+
     /**
      * Deletes the given Sound Sample from the soundboard.
      *

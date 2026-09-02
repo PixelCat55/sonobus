@@ -225,6 +225,21 @@ void SoundboardProcessor::updatePlaybackSettings(SoundSample& sampleToUpdate)
     }
 }
 
+bool SoundboardProcessor::containsSample(const SoundSample* sample)
+{
+    if (sample == nullptr)
+        return false;
+
+    for (auto& soundboard : soundboards) {
+        for (auto& ownedSample : soundboard.getSamples()) {
+            if (ownedSample.get() == sample)
+                return true;
+        }
+    }
+
+    return false;
+}
+
 bool SoundboardProcessor::isSampleURLInUse(const juce::URL & url)
 {
     for (auto& soundboard : soundboards) {

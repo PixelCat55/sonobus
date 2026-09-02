@@ -283,14 +283,18 @@ void LatestVersionCheckerAndUpdater::askUserAboutNewVersion (const String& newVe
 {
     dialogWindow = UpdateDialog::launchDialog (newVersionString, releaseNotes);
 
+    WeakReference<LatestVersionCheckerAndUpdater> safeThis (this);
     if (auto* mm = ModalComponentManager::getInstance())
         mm->attachCallback (dialogWindow.get(),
-                            ModalCallbackFunction::create ([this, asset] (int result)
+                            ModalCallbackFunction::create ([safeThis, asset] (int result)
                                                            {
-                                                               if (result == 1)
-                                                                    askUserForLocationToDownload (asset);
+                                                               if (safeThis == nullptr)
+                                                                   return;
 
-                                                                dialogWindow.reset();
+                                                               if (result == 1)
+                                                                    safeThis->askUserForLocationToDownload (asset);
+
+                                                                safeThis->dialogWindow.reset();
                                                             }));
 }
 
@@ -585,10 +589,12 @@ void restartProcess (const File& targetFolder)
 
 void LatestVersionCheckerAndUpdater::downloadAndInstall (const VersionInfo::Asset& asset, const File& targetFolder)
 {
+    WeakReference<LatestVersionCheckerAndUpdater> safeThis (this);
     installer.reset (new DownloadAndInstallThread (asset, targetFolder,
-                                                   [this, targetFolder]
+                                                   [safeThis]
                                                    {
-                                                       installer.reset();
+                                                       if (safeThis != nullptr)
+                                                           safeThis->installer.reset();
                                                        //restartProcess (targetFolder);
                                                    }));
 }

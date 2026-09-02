@@ -3067,9 +3067,9 @@ void SonobusAudioProcessorEditor::showLatencyMatchView(bool show)
 
         Rectangle<int> bounds =  dw->getLocalArea(nullptr, mMainLinkButton->getScreenBounds());
         DBG("callout bounds: " << bounds.toString());
-        latmatchCalloutBox = & SonoCallOutBox::launchAsynchronously (std::move(wrap), bounds , dw, false, [this](const Component * comp) {
-            if (comp == mMainLinkButton.get()) return false;
-            return true;
+        SafePointer<SonobusAudioProcessorEditor> safeThis(this);
+        latmatchCalloutBox = & SonoCallOutBox::launchAsynchronously (std::move(wrap), bounds , dw, false, [safeThis](const Component * comp) mutable {
+            return safeThis == nullptr || comp != safeThis->mMainLinkButton.get();
         });
         if (auto * box = dynamic_cast<SonoCallOutBox*>(latmatchCalloutBox.get())) {
             box->setDismissalMouseClicksAreAlwaysConsumed(true);
@@ -3177,9 +3177,9 @@ void SonobusAudioProcessorEditor::showSuggestGroupView(bool show)
 
         Rectangle<int> bounds =  dw->getLocalArea(nullptr, mMainLinkButton->getScreenBounds());
         DBG("callout bounds: " << bounds.toString());
-        suggestNewGroupViewCalloutBox = & SonoCallOutBox::launchAsynchronously (std::move(wrap), bounds , dw, false, [this](const Component * comp) {
-            if (comp == mMainLinkButton.get()) return false;
-            return true;
+        SafePointer<SonobusAudioProcessorEditor> safeThis(this);
+        suggestNewGroupViewCalloutBox = & SonoCallOutBox::launchAsynchronously (std::move(wrap), bounds , dw, false, [safeThis](const Component * comp) mutable {
+            return safeThis == nullptr || comp != safeThis->mMainLinkButton.get();
         });
         if (SonoCallOutBox * box = dynamic_cast<SonoCallOutBox*>(suggestNewGroupViewCalloutBox.get())) {
             box->setDismissalMouseClicksAreAlwaysConsumed(true);
@@ -4339,9 +4339,9 @@ void SonobusAudioProcessorEditor::showSuggestedGroupPrompt(const String &name, c
 
         Rectangle<int> bounds =  dw->getLocalArea(nullptr, mMainLinkButton->getScreenBounds());
         DBG("callout bounds: " << bounds.toString());
-        suggestedGroupCalloutBox = & SonoCallOutBox::launchAsynchronously (std::move(wrap), bounds , dw, false, [this](const Component * comp) {
-            if (comp == mMainLinkButton.get()) return false;
-            return true;
+        SafePointer<SonobusAudioProcessorEditor> safeThis(this);
+        suggestedGroupCalloutBox = & SonoCallOutBox::launchAsynchronously (std::move(wrap), bounds , dw, false, [safeThis](const Component * comp) mutable {
+            return safeThis == nullptr || comp != safeThis->mMainLinkButton.get();
         });
 
         if (SonoCallOutBox * box = dynamic_cast<SonoCallOutBox*>(suggestedGroupCalloutBox.get())) {
@@ -5923,8 +5923,10 @@ void SonobusAudioProcessorEditor::populateRecentSetupsMenu(PopupMenu & popup)
 {
     popup.clear();
 
-    auto callback = [this](File file) {
-        this->loadSettingsFromFile(file);
+    SafePointer<SonobusAudioProcessorEditor> safeThis(this);
+    auto callback = [safeThis](File file) mutable {
+        if (safeThis != nullptr)
+            safeThis->loadSettingsFromFile(file);
     };
 
     if (getRecentSetupFiles && getRecentSetupFiles()) {

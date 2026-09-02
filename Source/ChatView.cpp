@@ -351,9 +351,10 @@ void ChatView::chatTabRightClicked (int tabindex)
     if (!dw) dw = mChatTabs->findParentComponentOfClass<Component>();
     Rectangle<int> bounds =  dw->getLocalArea(nullptr, mChatTabs->getTabButton(tabindex)->getScreenBounds());
 
-    auto callback = [this, tabindex](GenericItemChooser* chooser,int index) mutable {
-        if (index == 0)
-            deletePrivateChatTab(tabindex);
+    SafePointer<ChatView> safeThis(this);
+    auto callback = [safeThis, tabindex](GenericItemChooser*, int index) mutable {
+        if (safeThis != nullptr && index == 0)
+            safeThis->deletePrivateChatTab(tabindex);
     };
 
     GenericItemChooser::launchPopupChooser(citems, bounds, dw, callback, -1, dw ? dw->getHeight()-30 : 0);
